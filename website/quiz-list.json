@@ -1,12 +1,41 @@
 {
   "quizzes": [
     {
+      "title": "Gabby's Dollhouse Matching",
+      "file": "gabbys-dollhouse-matching-quiz.html",
+      "type": "match",
+      "updatedAt": "2026-07-02T14:57:00.363Z"
+    },
+    {
+      "title": "Gabby's Dollhouse Memory Match",
+      "file": "gabby-s-dollhouse-memory-match.html",
+      "type": "memory-match",
+      "updatedAt": "2026-07-02T16:17:40.608Z"
+    },
+    {
+      "title": "Harry Potter Matching Quiz",
+      "file": "harry-potter-matching-quiz.html",
+      "type": "match",
+      "updatedAt": "2026-07-02T15:43:06.487Z"
+    },
+    {
+      "title": "Harry Potter Memory Quiz",
+      "file": "harry-potter-memory-quiz.html",
+      "type": "memory-match",
+      "updatedAt": "2026-07-02T15:55:14.688Z"
+    },
+    {
+      "title": "Toys Timeline Challenge! ⏳",
+      "file": "toys-timeline-game.html",
+      "type": "timeline",
+      "updatedAt": "2026-07-02T15:18:31.119Z"
+    },
+    {
       "title": "World Cup - Football World Cup",
       "file": "world-cup-timeline-quiz.html",
       "type": "timeline",
-      "category": "World Cup",
-      "updatedAt": "2026-07-02T19:28:30.099Z"
+      "updatedAt": "2026-07-02T19:28:30.098Z"
     }
   ],
-  "updatedAt": "2026-07-02T19:28:30.099Z"
+  "updatedAt": "2026-07-02T19:40:08.782Z"
 }
