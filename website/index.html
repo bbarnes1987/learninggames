@@ -296,10 +296,10 @@
 
                 <section class="section-card" aria-labelledby="created-quizzes-heading">
                     <h2 id="created-quizzes-heading" class="section-heading">Quizzes created</h2>
-                    <p class="section-intro">This section loads automatically from quiz-list.json in the root website folder. Each button name comes from the title saved for that quiz.</p>
+                    <p class="section-intro">This section loads from quiz-list.json in the root website folder. On GitHub Pages or Live Server it loads automatically; when double-clicking the file locally, use the local test button.</p>
 
                     <div class="quiz-toolbar">
-                        <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose quizzes folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
+                        <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose website folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
                         <button class="tool-button secondary" id="refreshQuizzesButton" type="button">Refresh quizzes</button>
                     </div>
 
@@ -310,7 +310,7 @@
         </main>
 
         <footer>
-            Place this file in the root website folder. The quiz buttons load from quiz-list.json, and quiz files open from the quizzes folder.
+            Place this file in the root website folder. The quiz buttons load from root quiz-list.json, and quiz files open from the quizzes folder.
         </footer>
     </div>
 
@@ -324,7 +324,7 @@
         const chooseQuizzesFolderButton = document.getElementById('chooseQuizzesFolderButton');
         const refreshQuizzesButton = document.getElementById('refreshQuizzesButton');
 
-        let selectedQuizzesFolderHandle = null;
+        let selectedWebsiteFolderHandle = null;
         let scanTimer = null;
         let latestRenderedSignature = '';
 
@@ -355,6 +355,12 @@
             return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(fileName)}`;
         }
 
+        function normaliseManifestEntries(manifest) {
+            if (Array.isArray(manifest)) return manifest;
+            if (manifest && Array.isArray(manifest.quizzes)) return manifest.quizzes;
+            return [];
+        }
+
         function renderQuizzes(quizzes, sourceText) {
             const validQuizzes = quizzes
                 .filter(quiz => quiz && quiz.file && quiz.title)
@@ -367,7 +373,7 @@
             createdQuizzesGrid.innerHTML = '';
 
             if (!validQuizzes.length) {
-                setStatus('No quizzes found yet. Add a quiz to the quizzes folder, then refresh this page or choose the quizzes folder.', 'warning');
+                setStatus('No quizzes are listed in quiz-list.json yet. Add a quiz using one of the builder pages, then click Refresh quizzes.', 'warning');
                 return;
             }
 
@@ -384,104 +390,104 @@
                 createdQuizzesGrid.appendChild(link);
             }
 
-            setStatus(`${validQuizzes.length} quiz${validQuizzes.length === 1 ? '' : 'zes'} found${sourceText ? ` from ${sourceText}` : ''}. This list refreshes automatically while the page is open.`, 'success');
+            setStatus(`${validQuizzes.length} quiz${validQuizzes.length === 1 ? '' : 'zes'} found${sourceText ? ` from ${sourceText}` : ''}.`, 'success');
         }
 
-        async function loadFromManifest() {
+        async function loadFromHostedManifest() {
             try {
                 const response = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`, { cache: 'no-store' });
-                if (!response.ok) throw new Error('No quiz manifest found.');
+                if (!response.ok) throw new Error(`Could not load ${MANIFEST_PATH}.`);
 
                 const manifest = await response.json();
-                const entries = Array.isArray(manifest) ? manifest : (manifest.quizzes || []);
+                const entries = normaliseManifestEntries(manifest);
                 const quizzes = [];
 
                 for (const entry of entries) {
                     const file = typeof entry === 'string' ? entry : entry.file;
                     if (!file || !/\.html?$/i.test(file)) continue;
 
-                    let title = typeof entry === 'object' ? entry.title : '';
-                    if (!title) {
-                        try {
-                            const quizResponse = await fetch(`${QUIZ_FOLDER_NAME}/${encodeURIComponent(file)}?v=${Date.now()}`, { cache: 'no-store' });
-                            const html = await quizResponse.text();
-                            title = titleFromHtml(html, tidyTitleFromFilename(file));
-                        } catch (error) {
-                            title = tidyTitleFromFilename(file);
-                        }
-                    }
-
+                    const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file);
                     quizzes.push({ file, title });
                 }
 
-                renderQuizzes(quizzes, 'quiz-list.json');
+                renderQuizzes(quizzes, 'root quiz-list.json');
                 return true;
             } catch (error) {
                 return false;
             }
         }
 
-        async function scanSelectedFolder() {
-            if (!selectedQuizzesFolderHandle) {
-                const loaded = await loadFromManifest();
-                if (!loaded && !createdQuizzesGrid.children.length) {
-                    setStatus('No quiz-list.json was found yet in the root website folder. Add the starter quiz-list.json next to index.html. For local testing, click Choose quizzes folder and select the existing quizzes folder.', 'warning');
-                }
+        async function loadFromSelectedWebsiteFolder() {
+            if (!selectedWebsiteFolderHandle) return false;
+
+            try {
+                const manifestHandle = await selectedWebsiteFolderHandle.getFileHandle(MANIFEST_PATH);
+                const manifestFile = await manifestHandle.getFile();
+                const manifest = JSON.parse(await manifestFile.text());
+                const entries = normaliseManifestEntries(manifest);
+
+                // This confirms the selected folder is the website root, not the quizzes folder.
+                await selectedWebsiteFolderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+
+                const quizzes = entries
+                    .map(entry => {
+                        const file = typeof entry === 'string' ? entry : entry.file;
+                        const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file || 'quiz.html');
+                        return { file, title, href: safeRelativeQuizHref(file) };
+                    })
+                    .filter(quiz => quiz.file && /\.html?$/i.test(quiz.file));
+
+                renderQuizzes(quizzes, 'the selected website folder');
+                return true;
+            } catch (error) {
+                setStatus('The selected folder is not the website root folder. Choose the folder that contains index.html, quiz-list.json and the quizzes folder.', 'warning');
+                return false;
+            }
+        }
+
+        async function refreshQuizzes() {
+            latestRenderedSignature = '';
+
+            if (selectedWebsiteFolderHandle) {
+                await loadFromSelectedWebsiteFolder();
                 return;
             }
 
-            const quizzes = [];
-
-            try {
-                for await (const [fileName, handle] of selectedQuizzesFolderHandle.entries()) {
-                    if (handle.kind !== 'file' || !/\.html?$/i.test(fileName)) continue;
-                    const file = await handle.getFile();
-                    const html = await file.text();
-                    quizzes.push({
-                        file: fileName,
-                        title: titleFromHtml(html, tidyTitleFromFilename(fileName)),
-                        href: safeRelativeQuizHref(fileName)
-                    });
-                }
-
-                renderQuizzes(quizzes, 'the selected quizzes folder');
-            } catch (error) {
-                setStatus('The quizzes folder could not be scanned. Choose the quizzes folder again, then refresh quizzes.', 'warning');
+            const loaded = await loadFromHostedManifest();
+            if (!loaded) {
+                setStatus('Could not automatically read quiz-list.json. This usually happens if you opened index.html by double-clicking it. Use VS Code Live Server, GitHub Pages, or click Choose website folder for local testing.', 'warning');
             }
         }
 
         function startPeriodicScan() {
             if (scanTimer) clearInterval(scanTimer);
-            scanTimer = setInterval(scanSelectedFolder, SCAN_INTERVAL_MS);
+            scanTimer = setInterval(async () => {
+                if (selectedWebsiteFolderHandle) {
+                    await loadFromSelectedWebsiteFolder();
+                } else {
+                    await loadFromHostedManifest();
+                }
+            }, SCAN_INTERVAL_MS);
         }
 
         chooseQuizzesFolderButton.addEventListener('click', async () => {
             if (!window.showDirectoryPicker) {
-                setStatus('This browser does not support direct folder scanning. Use Chrome or Edge, or create quiz-list.json for automatic hosted-site loading.', 'warning');
+                setStatus('This browser does not support direct folder access. Use Chrome or Edge for local testing, or test through VS Code Live Server / GitHub Pages.', 'warning');
                 return;
             }
 
             try {
-                selectedQuizzesFolderHandle = await window.showDirectoryPicker({ mode: 'read' });
-                latestRenderedSignature = '';
-                await scanSelectedFolder();
+                selectedWebsiteFolderHandle = await window.showDirectoryPicker({ mode: 'read' });
+                await loadFromSelectedWebsiteFolder();
                 startPeriodicScan();
             } catch (error) {
-                setStatus('Folder selection cancelled. Choose the existing quizzes folder when you are ready.', 'warning');
+                setStatus('Folder selection cancelled. Choose the website root folder when you are ready.', 'warning');
             }
         });
 
-        refreshQuizzesButton.addEventListener('click', async () => {
-            latestRenderedSignature = '';
-            await scanSelectedFolder();
-        });
+        refreshQuizzesButton.addEventListener('click', refreshQuizzes);
 
-        loadFromManifest().then((loaded) => {
-            if (!loaded) {
-                setStatus('No quiz-list.json was found yet. Add the starter quiz-list.json file next to index.html in the root website folder, then add quizzes using the builder.', 'warning');
-            }
-            startPeriodicScan();
-        });
+        refreshQuizzes().then(startPeriodicScan);
     </script>
 </body>
 </html>
