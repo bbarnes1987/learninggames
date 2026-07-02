@@ -45,6 +45,121 @@
             border-color: var(--theme-soft-border) !important;
         }
 
+
+        /* Cleaner two-row header layout */
+        .header-inner {
+            max-width: 72rem;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .header-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .title-block {
+            min-width: 0;
+        }
+
+        .header-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat-card {
+            background-color: var(--theme-soft-bg);
+            color: var(--theme-heading-dark);
+            border: 2px solid var(--theme-soft-border);
+            border-radius: 18px;
+            padding: 10px 14px;
+            min-height: 74px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.08);
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            line-height: 1;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.78;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.35rem;
+            line-height: 1.05;
+            font-weight: 900;
+        }
+
+        .stat-sub {
+            font-size: 0.8rem;
+            line-height: 1.1;
+            font-weight: 900;
+            margin-top: 5px;
+            opacity: 0.92;
+        }
+
+        .header-restart-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+            .header-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app-header {
+                padding: 12px !important;
+            }
+
+            .header-top-row {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header-restart-button {
+                width: 100%;
+            }
+
+            .game-title-text {
+                font-size: 1.75rem !important;
+            }
+
+            .header-stats-grid {
+                gap: 8px;
+            }
+
+            .stat-card {
+                min-height: 66px;
+                padding: 8px 10px;
+                border-radius: 16px;
+            }
+
+            .stat-value {
+                font-size: 1.05rem;
+            }
+
+            .stat-sub {
+                font-size: 0.7rem;
+            }
+        }
+
         .timeline-line {
             background-color: var(--theme-soft-border) !important;
         }
@@ -252,29 +367,39 @@
 
     <!-- Game Header -->
     <header class="app-header bg-white shadow-md p-4 sticky top-0 z-50 border-b-4 border-emerald-500">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-                <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
-                <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
-            </div>
-            <div class="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3">
-                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
-                    Score: <span id="score-display">0</span> / <span id="total-display">0</span>
+        <div class="header-inner">
+            <div class="header-top-row">
+                <div class="title-block">
+                    <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
+                    <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
                 </div>
-                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
-                    Time: <span id="timer-display">0:00.0</span>
-                    <span class="block text-sm font-black mt-1">Best score: <span id="best-time-display">—</span></span>
-                </div>
-                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
-                    Mistakes: <span id="mistake-display">0</span>
-                    <span class="block text-sm font-black mt-1">Penalty: +<span id="penalty-display">0:00.0</span></span>
-                </div>
-                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
-                    Difficulty: <span id="difficulty-display">Choose</span>
-                </div>
-                <button id="start-again-button" onclick="location.reload()" class="restart-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-lg shadow-lg transition-transform hover:scale-105 active:scale-95">
+                <button id="start-again-button" onclick="location.reload()" class="restart-button header-restart-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-lg shadow-lg transition-transform hover:scale-105 active:scale-95">
                     Start Again
                 </button>
+            </div>
+
+            <div class="header-stats-grid" aria-label="Game progress and scoring">
+                <div class="stat-card">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value"><span id="score-display">0</span> / <span id="total-display">0</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value" id="timer-display">0:00.0</span>
+                    <span class="stat-sub">Best: <span id="best-time-display">—</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value"><span id="mistake-display">0</span> mistakes</span>
+                    <span class="stat-sub">Penalty: +<span id="penalty-display">0:00.0</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Difficulty</span>
+                    <span class="stat-value" id="difficulty-display">Choose</span>
+                </div>
             </div>
         </div>
     </header>
