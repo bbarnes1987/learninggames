@@ -362,7 +362,7 @@
 
             <section class="panel">
                 <h2 class="panel-title">2. Card details</h2>
-                <p class="panel-help">Choose how many cards you want, then enter the order label, event text and image link or upload an image for each card. The correct answer is based on the order of the cards in this builder: Card 1 comes first, Card 2 comes second, and so on.</p>
+                <p class="panel-help">Choose how many cards you want, then enter the label to show on the card, event text and image link or upload an image for each card. The correct answer is based on the order of the cards in this builder: Card 1 comes first, Card 2 comes second, and so on.</p>
 
                 <div class="card-toolbar">
                     <div class="field card-count-box">
@@ -530,8 +530,8 @@
                     <h3>Card ${index + 1}</h3>
                     <div class="form-grid three">
                         <div class="field">
-                            <label for="cardYear-${index}">Order label shown on card</label>
-                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. ${escapeAttribute(example.year)} or Ice Age">
+                            <label for="cardYear-${index}">Order label shown when revealed</label>
+                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. 1603, Ice Age, Step 1">
                         </div>
                         <div class="field full">
                             <label for="cardText-${index}">Event text</label>
@@ -721,8 +721,7 @@
             });
 
             return `const allGameCards = [
-${lines.join(',
-')}
+${lines.join(',\n')}
         ];`;
         }
 
