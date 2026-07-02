@@ -256,8 +256,14 @@
                 <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
                 <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
             </div>
-            <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
-                Score: <span id="score-display">0</span> / <span id="total-display">0</span>
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
+                    Score: <span id="score-display">0</span> / <span id="total-display">0</span>
+                </div>
+                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
+                    Time: <span id="timer-display">0:00.0</span>
+                    <span class="block text-sm font-black mt-1">Fastest: <span id="best-time-display">—</span></span>
+                </div>
             </div>
         </div>
     </header>
@@ -295,7 +301,12 @@
         <div class="bg-white rounded-3xl p-8 max-w-md text-center transform scale-90 transition-transform duration-300 shadow-2xl" id="win-content">
             <div class="text-7xl mb-4">🏆</div>
             <h2 id="win-title" class="win-title text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
-            <p id="win-message" class="text-xl text-gray-600 mb-8">You have perfectly ordered the timeline of The Stuarts.</p>
+            <p id="win-message" class="text-xl text-gray-600 mb-4">You have perfectly ordered the timeline of The Stuarts.</p>
+            <div id="final-time-summary" class="hidden bg-gray-100 rounded-2xl p-4 mb-6 text-gray-700">
+                <p class="text-lg font-black">Your time: <span id="final-time">0:00.0</span></p>
+                <p class="text-base font-bold mt-1">Fastest time: <span id="final-best-time">—</span></p>
+                <p id="new-best-message" class="hidden text-sm font-black mt-2">New fastest time!</p>
+            </div>
             <button id="play-again-button" onclick="location.reload()" class="play-again-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
                 Play Again
             </button>
@@ -390,6 +401,12 @@
         let draggedCard = null;
         let touchSelectedCard = null;
 
+        let timerStarted = false;
+        let timerFinished = false;
+        let timerStartMs = 0;
+        let timerIntervalId = null;
+        let bestTimeMs = null;
+
         function textWithCategory(text) {
             return String(text).replace(/\{category\}/g, teacherSettings.categoryName);
         }
@@ -457,10 +474,112 @@
             document.getElementById('win-title').innerText = 'Incredible!';
             document.getElementById('win-message').innerText = `You have perfectly ordered the timeline of ${teacherSettings.categoryName}.`;
             document.getElementById('play-again-button').innerText = 'Play Again';
+
+            const newBestMessage = document.getElementById('new-best-message');
+            if (newBestMessage) newBestMessage.style.color = headingDark;
         }
 
         function clamp(min, value, max) {
             return Math.max(min, Math.min(value, max));
+        }
+
+        function getBestTimeStorageKey() {
+            // sessionStorage keeps this in the current browser tab/window, including after pressing Play Again.
+            // Closing the tab/window clears it.
+            return `timeline-game-best-time:${teacherSettings.categoryName}:${gameData.length}`;
+        }
+
+        function getStoredBestTime() {
+            try {
+                const storedValue = sessionStorage.getItem(getBestTimeStorageKey());
+                const parsedValue = Number(storedValue);
+                return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function storeBestTime(milliseconds) {
+            try {
+                sessionStorage.setItem(getBestTimeStorageKey(), String(Math.round(milliseconds)));
+            } catch (error) {
+                // If the browser blocks sessionStorage, the best time still works until the page reloads.
+            }
+        }
+
+        function formatTime(milliseconds) {
+            const safeMilliseconds = Math.max(0, Math.floor(milliseconds || 0));
+            const totalTenths = Math.floor(safeMilliseconds / 100);
+            const tenths = totalTenths % 10;
+            const totalSeconds = Math.floor(totalTenths / 10);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${String(seconds).padStart(2, '0')}.${tenths}`;
+        }
+
+        function updateTimerDisplay(milliseconds) {
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) timerDisplay.innerText = formatTime(milliseconds);
+        }
+
+        function updateBestTimeDisplay() {
+            const displayText = bestTimeMs === null ? '—' : formatTime(bestTimeMs);
+            const bestDisplay = document.getElementById('best-time-display');
+            const finalBestDisplay = document.getElementById('final-best-time');
+
+            if (bestDisplay) bestDisplay.innerText = displayText;
+            if (finalBestDisplay) finalBestDisplay.innerText = displayText;
+        }
+
+        function loadBestTime() {
+            bestTimeMs = getStoredBestTime();
+            updateTimerDisplay(0);
+            updateBestTimeDisplay();
+        }
+
+        function startGameTimer() {
+            if (timerStarted || timerFinished) return;
+
+            timerStarted = true;
+            timerStartMs = performance.now();
+            updateTimerDisplay(0);
+
+            timerIntervalId = setInterval(() => {
+                updateTimerDisplay(performance.now() - timerStartMs);
+            }, 100);
+        }
+
+        function stopGameTimer() {
+            if (timerFinished) return;
+
+            timerFinished = true;
+            if (timerIntervalId) clearInterval(timerIntervalId);
+
+            const finalTimeMs = timerStarted ? performance.now() - timerStartMs : 0;
+            const isNewBestTime = bestTimeMs === null || finalTimeMs < bestTimeMs;
+
+            updateTimerDisplay(finalTimeMs);
+
+            if (isNewBestTime) {
+                bestTimeMs = finalTimeMs;
+                storeBestTime(bestTimeMs);
+            }
+
+            updateBestTimeDisplay();
+            showFinalTime(finalTimeMs, isNewBestTime);
+        }
+
+        function showFinalTime(finalTimeMs, isNewBestTime) {
+            const finalSummary = document.getElementById('final-time-summary');
+            const finalTime = document.getElementById('final-time');
+            const newBestMessage = document.getElementById('new-best-message');
+
+            if (finalTime) finalTime.innerText = formatTime(finalTimeMs);
+            if (finalSummary) finalSummary.classList.remove('hidden');
+
+            if (newBestMessage) {
+                newBestMessage.classList.toggle('hidden', !isNewBestTime);
+            }
         }
 
         function updateTimelineTileSizing() {
@@ -542,6 +661,7 @@
 
         function initGame() {
             applyTeacherSettings();
+            loadBestTime();
             document.getElementById('total-display').innerText = gameData.length;
             eventsWithIds = gameData.map((item, index) => ({ ...item, id: `event-${index}` }));
 
@@ -601,7 +721,11 @@
             const slots = document.querySelectorAll('.timeline-slot');
 
             cards.forEach(card => {
+                card.addEventListener('pointerdown', () => {
+                    if (!card.classList.contains('locked-in-timeline')) startGameTimer();
+                });
                 card.addEventListener('dragstart', (e) => {
+                    startGameTimer();
                     draggedCard = card;
                     if (e.dataTransfer) e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
                     card.classList.add('opacity-50');
@@ -610,6 +734,7 @@
                 card.addEventListener('dragend', () => { card.classList.remove('opacity-50'); draggedCard = null; });
                 card.addEventListener('click', () => {
                     if (card.classList.contains('locked-in-timeline')) return;
+                    startGameTimer();
                     if (touchSelectedCard === card) { clearTouchSelection(cards); } 
                     else { clearTouchSelection(cards); touchSelectedCard = card; card.classList.add('ring-8', 'ring-blue-400'); }
                 });
@@ -647,6 +772,7 @@
                 score++;
                 document.getElementById('score-display').innerText = score;
                 if (score === gameData.length) {
+                    stopGameTimer();
                     document.getElementById('win-modal').classList.remove('hidden');
                     document.getElementById('win-content').classList.add('scale-100');
                     fireConfetti();
