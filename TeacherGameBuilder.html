@@ -9,14 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --green: #059669;
-            --green-dark: #047857;
-            --soft: #ecfdf5;
-            --soft-border: #a7f3d0;
+            --green: #5b3293;
+            --green-dark: #45246f;
+            --soft: #f4f0fb;
+            --soft-border: #9c88c0;
             --ink: #1f2937;
             --muted: #6b7280;
             --panel: #ffffff;
-            --page: #f0fdf4;
+            --page: #f7f3ff;
         }
 
         * { box-sizing: border-box; }
@@ -26,7 +26,7 @@
             font-family: 'Nunito', sans-serif;
             color: var(--ink);
             background: var(--page);
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23059669' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%235b3293' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
         }
 
         header {
@@ -137,7 +137,7 @@
 
         input:focus, select:focus, textarea:focus {
             border-color: var(--green);
-            box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+            box-shadow: 0 0 0 4px rgba(91, 50, 147, 0.14);
         }
 
         input[type="color"] {
@@ -203,7 +203,7 @@
         .primary {
             background: var(--green);
             color: white;
-            box-shadow: 0 7px 18px rgba(5, 150, 105, 0.24);
+            box-shadow: 0 7px 18px rgba(91, 50, 147, 0.24);
         }
 
         .secondary {
@@ -305,12 +305,12 @@
                 <div class="form-grid three" style="margin-top:16px;">
                     <div class="field">
                         <label for="backgroundColour">Background colour</label>
-                        <input id="backgroundColour" type="color" value="#f0fdf4">
+                        <input id="backgroundColour" type="color" value="#f7f3ff">
                     </div>
 
                     <div class="field">
                         <label for="headingSectionColour">Heading section colour</label>
-                        <input id="headingSectionColour" type="color" value="#059669">
+                        <input id="headingSectionColour" type="color" value="#5b3293">
                     </div>
 
                     <div class="field">
@@ -350,7 +350,7 @@
                         <label for="cardCount">Number of cards</label>
                         <input id="cardCount" type="number" min="1" max="40" step="1" value="9">
                     </div>
-                    <div class="hint">Image links can be left blank. Blank images use a scroll emoji placeholder.</div>
+                    <div class="hint">Paste a Google Drive share link for each image. The builder will automatically convert it into the correct thumbnail link. Blank images use a scroll emoji placeholder.</div>
                 </div>
 
                 <div id="cardsList" class="cards-list"></div>
@@ -408,6 +408,28 @@
             return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : fallback;
         }
 
+        function extractGoogleDriveFileId(imageLink) {
+            const raw = String(imageLink || '').trim();
+            if (!raw || !raw.includes('drive.google.com')) return '';
+
+            const filePathMatch = raw.match(/drive\.google\.com\/file\/d\/([^/?#]+)/i);
+            if (filePathMatch) return decodeURIComponent(filePathMatch[1]);
+
+            const idParameterMatch = raw.match(/[?&]id=([^&#]+)/i);
+            if (idParameterMatch) return decodeURIComponent(idParameterMatch[1]);
+
+            return '';
+        }
+
+        function normaliseImageLink(imageLink) {
+            const raw = String(imageLink || '').trim();
+            const driveFileId = extractGoogleDriveFileId(raw);
+            if (driveFileId) {
+                return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveFileId)}&sz=w220`;
+            }
+            return raw;
+        }
+
         function collectCardsFromForm() {
             const count = Math.max(1, Math.min(40, Number($('cardCount').value) || 1));
             const collected = [];
@@ -458,7 +480,8 @@
                         </div>
                         <div class="field full">
                             <label for="cardImage-${index}">Image link</label>
-                            <input id="cardImage-${index}" type="url" value="${escapeAttribute(card.image)}" placeholder="https://...">
+                            <input id="cardImage-${index}" type="url" value="${escapeAttribute(card.image)}" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=drive_link">
+                            <div class="hint">Paste the normal Google Drive share link. It will be converted to a thumbnail link when the game code is generated.</div>
                         </div>
                     </div>
                 `;
@@ -497,8 +520,8 @@
             categoryName: ${jsString($('categoryName').value)},
 
             // Page/theme colours
-            backgroundColour: ${jsString(normaliseHex($('backgroundColour').value, '#f0fdf4'))},
-            headingSectionColour: ${jsString(normaliseHex($('headingSectionColour').value, '#059669'))},
+            backgroundColour: ${jsString(normaliseHex($('backgroundColour').value, '#f7f3ff'))},
+            headingSectionColour: ${jsString(normaliseHex($('headingSectionColour').value, '#5b3293'))},
             headingTextColour: ${jsString(normaliseHex($('headingTextColour').value, '#ffffff'))},
 
             // Accuracy scoring
@@ -518,7 +541,8 @@
             const duplicateTracker = {};
             const lines = cards.map((card, index) => {
                 const sortYear = parseSortYear(card.year, index, duplicateTracker);
-                return `            { sortYear: ${sortYear}, displayDate: ${jsString(card.year)}, text: ${jsString(card.text)}, image: ${jsString(card.image)}, emoji: "📜" }`;
+                const imageLink = normaliseImageLink(card.image);
+                return `            { sortYear: ${sortYear}, displayDate: ${jsString(card.year)}, text: ${jsString(card.text)}, image: ${jsString(imageLink)}, emoji: "📜" }`;
             });
 
             return `const allGameCards = [
@@ -563,7 +587,7 @@ ${lines.join(',\n')}
                 .replace(/const allGameCards = \[[\s\S]*?\n        \];/, cardsCode);
 
             $('outputCode').value = output;
-            $('statusText').innerText = `Generated ${cards.length} card game code.`;
+            $('statusText').innerText = `Generated ${cards.length} card game code. Google Drive image links have been converted to thumbnails where needed.`;
             return output;
         }
 
@@ -605,8 +629,8 @@ ${lines.join(',\n')}
         }
 
         function updateColourPreview() {
-            const bg = normaliseHex($('backgroundColour').value, '#f0fdf4');
-            const heading = normaliseHex($('headingSectionColour').value, '#059669');
+            const bg = normaliseHex($('backgroundColour').value, '#f7f3ff');
+            const heading = normaliseHex($('headingSectionColour').value, '#5b3293');
             const text = normaliseHex($('headingTextColour').value, '#ffffff');
 
             $('backgroundPreview').style.backgroundColor = bg;
