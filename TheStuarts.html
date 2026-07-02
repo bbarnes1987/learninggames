@@ -320,7 +320,7 @@
          * Colours must be hex colours, e.g. "#059669", "#2563eb", "#7c3aed".
          *
          * To change the topic shown on every card, edit categoryName once.
-         * Any text containing {category} will automatically use that same topic.
+         * The subtitle and win message will automatically use that same topic.
          *
          * cardsToUse cannot be higher than the number of cards in allGameCards.
          * If you want 10 cards, allGameCards needs at least 10 card entries.
@@ -329,22 +329,18 @@
             cardsToUse: 9,
 
             // Main topic/category shown on every card
-            categoryName: "World Cup",
+            categoryName: "The Stuarts",
 
             // Page/theme colours
-            backgroundColour: "#9c88c0",
+            backgroundColour: "#f0fdf4",
             backgroundPatternColour: "#22c55e",
-            headingSectionColour: "#5b3293",
+            headingSectionColour: "#059669",
             headingTextColour: "#ffffff",
 
             // Wording shown around the game
-            gameTitle: "World Cup Challenge! ⏳",
-            subtitleText: "Order the events of {category} correctly.",
+            gameTitle: "Timeline Challenge! ⏳",
             timelineHeading: "Chronological Order",
-            eventBankHeading: "Historical Events",
-            winTitle: "Incredible!",
-            winMessage: "You have perfectly ordered the timeline of {category}.",
-            playAgainText: "Play Again"
+            eventBankHeading: "Historical Events"
         };
 
         /*
@@ -458,12 +454,12 @@
             document.title = textWithCategory(teacherSettings.gameTitle || 'Historical Timeline Game');
 
             document.getElementById('game-title').innerText = textWithCategory(teacherSettings.gameTitle);
-            document.getElementById('game-subtitle').innerText = textWithCategory(teacherSettings.subtitleText);
+            document.getElementById('game-subtitle').innerText = `Order the events of ${teacherSettings.categoryName} correctly.`;
             document.getElementById('timeline-heading').innerText = textWithCategory(teacherSettings.timelineHeading);
             document.getElementById('event-bank-heading').innerText = textWithCategory(teacherSettings.eventBankHeading);
-            document.getElementById('win-title').innerText = textWithCategory(teacherSettings.winTitle);
-            document.getElementById('win-message').innerText = textWithCategory(teacherSettings.winMessage);
-            document.getElementById('play-again-button').innerText = textWithCategory(teacherSettings.playAgainText);
+            document.getElementById('win-title').innerText = 'Incredible!';
+            document.getElementById('win-message').innerText = `You have perfectly ordered the timeline of ${teacherSettings.categoryName}.`;
+            document.getElementById('play-again-button').innerText = 'Play Again';
         }
 
         function clamp(min, value, max) {
