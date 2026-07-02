@@ -11,17 +11,13 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
         body {
             font-family: 'Nunito', sans-serif;
             background-color: var(--theme-page-bg, #f0fdf4);
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        .font-cursive {
-            font-family: 'Pacifico', cursive;
         }
 
         /* Theme colours controlled by teacherSettings at the top of the script. */
@@ -182,6 +178,7 @@
         }
 
         .category-text {
+            font-family: 'Nunito', sans-serif !important;
             font-size: var(--tl-category-size) !important;
             line-height: 1.05 !important;
             min-width: 0;
@@ -575,7 +572,7 @@
                         <div class="card-icon rounded-full border-2 border-gray-600 flex items-center justify-center bg-gray-600 text-white shadow-inner flex-shrink-0">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-10 9h3v11h14v-11h3l-10-9zm0 4.5c1.5 2 3 4 3 6.5 0 2.5-1.5 4-3 5.5-1.5-1.5-3-3-3-5.5 0-2.5 1.5-4.5 3-6.5z"/></svg>
                         </div>
-                        <span class="category-text font-cursive text-gray-700 leading-tight text-left">${ev.category}</span>
+                        <span class="category-text font-bold text-gray-700 leading-tight text-left">${ev.category}</span>
                     </div>
                     
                     <div class="event-date hidden bg-emerald-600 text-white font-black px-2 py-0.5 rounded mb-1.5 shadow w-full">${ev.displayDate}</div>
