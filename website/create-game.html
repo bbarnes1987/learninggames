@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Education Interactive Game Maker</title>
+    <title>Create a Game</title>
 
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#5b3293">
@@ -272,46 +272,48 @@
                     <span class="brand-badge">🎲</span>
                     <span>Education Games</span>
                 </a>
+                <nav class="nav-actions" aria-label="Page navigation">
+                    <a class="nav-pill" href="index.html">Home</a>
+                    <a class="nav-pill" href="play-quiz.html">Play a quiz</a>
+                    <a class="nav-pill" href="admin.html">Admin</a>
+                </nav>
             </div>
             <div class="wrap hero">
-                <h1>Education Interactive Game Maker</h1>
-                <p class="subtitle">Create, manage and play classroom-ready games from one simple tablet-friendly home page.</p>
-                <div class="helper-strip" aria-label="App features">
-                    <span class="helper-chip">📱 App-ready</span>
-                    <span class="helper-chip">🎮 Child-friendly</span>
-                    <span class="helper-chip">🧑‍🏫 Teacher tools</span>
-                </div>
+                <h1>Create a game</h1>
+                <p class="subtitle">Choose the type of interactive activity you want to make.</p>
             </div>
         </header>
 
         <main>
             <div class="wrap sections">
-                <section class="section-card" aria-labelledby="home-actions-heading">
-                    <h2 id="home-actions-heading" class="section-heading">What would you like to do?</h2>
-                    <p class="section-intro">Choose whether to build a new game, open a quiz, or manage the quiz list.</p>
+                <section class="section-card" aria-labelledby="builder-links-heading">
+                    <h2 id="builder-links-heading" class="section-heading">Choose a game builder</h2>
+                    <p class="section-intro">Each builder creates a standalone quiz file and can add it to your website automatically.</p>
 
-                    <nav class="game-links" aria-label="Main menu">
-                        <a class="game-button big" href="create-game.html">
-                            <span class="icon gold" aria-hidden="true">✨</span>
-                            <span class="button-title">Create a game</span>
-                            <span class="button-help">Open the teacher builder pages.</span>
+                    <nav class="game-links" aria-label="Game builder links">
+                        <a class="game-button" href="TeacherCategorySort.html">
+                            <span class="icon" aria-hidden="true">🗂️</span>
+                            <span class="button-title">Create a Category Sort</span>
+                            <span class="button-help">Sort cards into the correct groups.</span>
                         </a>
-                        <a class="game-button big" href="play-quiz.html">
-                            <span class="icon green" aria-hidden="true">🎮</span>
-                            <span class="button-title">Play a quiz</span>
-                            <span class="button-help">Choose from the quizzes already created.</span>
+
+                        <a class="game-button" href="TeacherMemoryMatch.html">
+                            <span class="icon" aria-hidden="true">🧩</span>
+                            <span class="button-title">Create a Match</span>
+                            <span class="button-help">Build a pairs or memory matching game.</span>
                         </a>
-                        <a class="game-button big" href="admin.html">
-                            <span class="icon blue" aria-hidden="true">⚙️</span>
-                            <span class="button-title">Admin</span>
-                            <span class="button-help">Refresh or rebuild the quiz list.</span>
+
+                        <a class="game-button" href="TeacherTimelineBuilder.html">
+                            <span class="icon" aria-hidden="true">⏳</span>
+                            <span class="button-title">Create a Timeline</span>
+                            <span class="button-help">Order events, stages or periods correctly.</span>
                         </a>
                     </nav>
                 </section>
             </div>
         </main>
 
-        <footer>For full-screen tablet mode, add this site to the home screen and launch it from the app icon.</footer>
+        <footer>Use Add to website inside each builder to save the quiz and update the quiz list.</footer>
     </div>
 </body>
 

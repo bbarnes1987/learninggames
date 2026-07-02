@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Education Interactive Game Maker</title>
+    <title>Play a Quiz</title>
 
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#5b3293">
@@ -272,48 +272,129 @@
                     <span class="brand-badge">🎲</span>
                     <span>Education Games</span>
                 </a>
+                <nav class="nav-actions" aria-label="Page navigation">
+                    <a class="nav-pill" href="index.html">Home</a>
+                </nav>
             </div>
             <div class="wrap hero">
-                <h1>Education Interactive Game Maker</h1>
-                <p class="subtitle">Create, manage and play classroom-ready games from one simple tablet-friendly home page.</p>
-                <div class="helper-strip" aria-label="App features">
-                    <span class="helper-chip">📱 App-ready</span>
-                    <span class="helper-chip">🎮 Child-friendly</span>
-                    <span class="helper-chip">🧑‍🏫 Teacher tools</span>
-                </div>
+                <h1>Play a quiz</h1>
+                <p class="subtitle">Tap a quiz card to start playing.</p>
             </div>
         </header>
 
         <main>
             <div class="wrap sections">
-                <section class="section-card" aria-labelledby="home-actions-heading">
-                    <h2 id="home-actions-heading" class="section-heading">What would you like to do?</h2>
-                    <p class="section-intro">Choose whether to build a new game, open a quiz, or manage the quiz list.</p>
-
-                    <nav class="game-links" aria-label="Main menu">
-                        <a class="game-button big" href="create-game.html">
-                            <span class="icon gold" aria-hidden="true">✨</span>
-                            <span class="button-title">Create a game</span>
-                            <span class="button-help">Open the teacher builder pages.</span>
-                        </a>
-                        <a class="game-button big" href="play-quiz.html">
-                            <span class="icon green" aria-hidden="true">🎮</span>
-                            <span class="button-title">Play a quiz</span>
-                            <span class="button-help">Choose from the quizzes already created.</span>
-                        </a>
-                        <a class="game-button big" href="admin.html">
-                            <span class="icon blue" aria-hidden="true">⚙️</span>
-                            <span class="button-title">Admin</span>
-                            <span class="button-help">Refresh or rebuild the quiz list.</span>
-                        </a>
-                    </nav>
+                <section class="section-card" aria-labelledby="play-quizzes-heading">
+                    <h2 id="play-quizzes-heading" class="section-heading">Choose your quiz</h2>
+                    <p class="section-intro">These quizzes are loaded from the website quiz list.</p>
+                    <nav id="createdQuizzesGrid" class="game-links" aria-label="Created quiz links"></nav>
+                    <div id="quizStatus" class="status-box">Loading quizzes...</div>
                 </section>
             </div>
         </main>
 
-        <footer>For full-screen tablet mode, add this site to the home screen and launch it from the app icon.</footer>
+        <footer>Good luck!</footer>
     </div>
 </body>
+    <script>
+
+        const QUIZ_FOLDER_NAME = 'quizzes';
+        const MANIFEST_PATH = 'quiz-list.json';
+        const createdQuizzesGrid = document.getElementById('createdQuizzesGrid');
+        const quizStatus = document.getElementById('quizStatus');
+        let latestRenderedSignature = '';
+
+        function setStatus(message, type = '') {
+            quizStatus.textContent = message;
+            quizStatus.className = `status-box ${type}`.trim();
+        }
+
+        function tidyTitleFromFilename(fileName) {
+            return String(fileName)
+                .replace(/\.html?$/i, '')
+                .replace(/[-_]+/g, ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function safeRelativeQuizHref(fileName) {
+            return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(fileName)}`;
+        }
+
+        function normaliseManifestEntries(manifest) {
+            if (Array.isArray(manifest)) return manifest;
+            if (manifest && Array.isArray(manifest.quizzes)) return manifest.quizzes;
+            return [];
+        }
+
+        function iconForQuiz(quiz) {
+            const text = `${quiz.type || ''} ${quiz.file || ''} ${quiz.title || ''}`.toLowerCase();
+            if (text.includes('timeline')) return '⏳';
+            if (text.includes('memory')) return '🧠';
+            if (text.includes('matching') || text.includes('match')) return '🧩';
+            if (text.includes('sort') || text.includes('category')) return '🗂️';
+            return '🎮';
+        }
+
+        function renderQuizzes(quizzes, sourceText) {
+            const validQuizzes = quizzes
+                .filter(quiz => quiz && quiz.file && quiz.title)
+                .sort((a, b) => a.title.localeCompare(b.title));
+
+            const signature = JSON.stringify(validQuizzes.map(quiz => [quiz.file, quiz.title]));
+            if (signature === latestRenderedSignature) return;
+            latestRenderedSignature = signature;
+            createdQuizzesGrid.innerHTML = '';
+
+            if (!validQuizzes.length) {
+                setStatus('No quizzes are ready yet. Ask your teacher to add a quiz.', 'warning');
+                return;
+            }
+
+            for (const quiz of validQuizzes) {
+                const link = document.createElement('a');
+                link.className = 'game-button quiz-button';
+                link.href = quiz.href || safeRelativeQuizHref(quiz.file);
+                link.innerHTML = `
+                    <span class="icon" aria-hidden="true"></span>
+                    <span class="button-title"></span>
+                    <span class="button-help">Tap to play</span>
+                `;
+                link.querySelector('.icon').textContent = iconForQuiz(quiz);
+                link.querySelector('.button-title').textContent = quiz.title;
+                createdQuizzesGrid.appendChild(link);
+            }
+            setStatus(`${validQuizzes.length} quiz${validQuizzes.length === 1 ? '' : 'zes'} ready to play${sourceText ? ` from ${sourceText}` : ''}.`, 'success');
+        }
+
+        async function loadFromHostedManifest() {
+            try {
+                const response = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Could not load ${MANIFEST_PATH}.`);
+                const manifest = await response.json();
+                const entries = normaliseManifestEntries(manifest);
+                const quizzes = [];
+
+                for (const entry of entries) {
+                    const file = typeof entry === 'string' ? entry : entry.file;
+                    if (!file || !/\.html?$/i.test(file)) continue;
+                    const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file);
+                    const type = typeof entry === 'object' && entry.type ? entry.type : '';
+                    quizzes.push({ file, title, type });
+                }
+
+                renderQuizzes(quizzes, 'the quiz list');
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        loadFromHostedManifest().then(loaded => {
+            if (!loaded) {
+                setStatus('Could not load the quiz list. Ask your teacher to check that quiz-list.json has been uploaded to the website root folder.', 'warning');
+            }
+        });
+    </script>
 
 
     <script>

@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Category Sort Game Builder</title>
+
+    <!-- App / tablet full-screen support -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#5b3293">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Education Games">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -171,8 +181,10 @@
                     <button id="generateCode" class="btn-primary" type="button">Generate game code</button>
                     <button id="copyCode" class="btn-secondary" type="button">Copy code</button>
                     <button id="downloadGame" class="btn-secondary" type="button">Download HTML</button>
+                    <button id="addToWebsite" class="btn-secondary" type="button">Add to website</button>
                 </div>
             </div>
+            <p id="websiteStatus" class="text-[#3f2368] font-black mt-3"></p>
             <textarea id="generatedCode" class="input-field output-area" placeholder="Your generated game code will appear here after you click Generate game code."></textarea>
         </section>
     </main>
@@ -465,8 +477,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Category Sort Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>${escapeHtml(data.settings.categoryName)} - ${escapeHtml(data.settings.gameTitle)}</title>
+
+    <!-- App / tablet full-screen support -->
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#5b3293">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Education Games">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../icons/icon-192.png">
+
     <script src="https://cdn.tailwindcss.com"><\/script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -724,6 +746,14 @@
         }
         document.addEventListener('DOMContentLoaded', init);
     <\/script>
+
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../service-worker.js').catch(() => {});
+            });
+        }
+    <\/script>
 </body>
 </html>`;
         }
@@ -746,15 +776,151 @@
             try { await navigator.clipboard.writeText(text); showToast('Copied to clipboard'); }
             catch (e) { $('generatedCode').focus(); $('generatedCode').select(); document.execCommand('copy'); showToast('Copied to clipboard'); }
         }
+
+
+        function makeSafeFileSlug(value, fallback) {
+            return String(value || fallback || 'quiz')
+                .trim()
+                .toLowerCase()
+                .replace(/&/g, ' and ')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || (fallback || 'quiz');
+        }
+
+        function getTitleFromHtml(html, fallback) {
+            const match = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            if (!match) return fallback;
+            const parser = document.createElement('textarea');
+            parser.innerHTML = match[1];
+            return (parser.value || match[1]).replace(/\s+/g, ' ').trim() || fallback;
+        }
+
+        async function folderContainsFile(folderHandle, fileName) {
+            try {
+                await folderHandle.getFileHandle(fileName);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function getExistingQuizzesFolder(websiteRootHandle) {
+            try {
+                return await websiteRootHandle.getDirectoryHandle('quizzes', { create: false });
+            } catch (error) {
+                throw new Error('The selected folder must be the main website folder and it must already contain a quizzes folder. Please select the folder that contains index.html and the quizzes folder.');
+            }
+        }
+
+        async function validateWebsiteRootFolder(folderHandle) {
+            const selectedName = String(folderHandle && folderHandle.name ? folderHandle.name : '').toLowerCase();
+            if (selectedName === 'quizzes') {
+                throw new Error('You selected the quizzes folder. Please select the main website folder instead — the one that contains index.html and the quizzes folder.');
+            }
+            const hasIndex = await folderContainsFile(folderHandle, 'index.html');
+            if (!hasIndex) {
+                throw new Error('The selected folder does not contain index.html. Please select the main website folder, not the quizzes folder.');
+            }
+            await getExistingQuizzesFolder(folderHandle);
+        }
+
+        async function readQuizManifest(websiteRootHandle) {
+            try {
+                const manifestHandle = await websiteRootHandle.getFileHandle('quiz-list.json');
+                const manifestFile = await manifestHandle.getFile();
+                const manifestText = await manifestFile.text();
+                const parsed = JSON.parse(manifestText || '{}');
+                const quizzes = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.quizzes) ? parsed.quizzes : []);
+                return quizzes.filter(quiz => quiz && quiz.file);
+            } catch (error) {
+                return [];
+            }
+        }
+
+        async function updateQuizManifest(websiteRootHandle, entry) {
+            const existingQuizzes = await readQuizManifest(websiteRootHandle);
+            const withoutCurrent = existingQuizzes.filter(quiz => quiz.file !== entry.file);
+            const quizzes = [...withoutCurrent, entry].sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
+            const manifest = { quizzes, updatedAt: new Date().toISOString() };
+            const manifestHandle = await websiteRootHandle.getFileHandle('quiz-list.json', { create: true });
+            const writable = await manifestHandle.createWritable();
+            await writable.write(JSON.stringify(manifest, null, 2));
+            await writable.close();
+        }
+
+        function downloadTextFile(text, fileName, mimeType = 'text/html;charset=utf-8') {
+            const blob = new Blob([text], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+
+        function getCategorySortQuizFileName() {
+            const categorySlug = makeSafeFileSlug(getSetting('categoryName', 'category-sort'), 'category-sort');
+            return `${categorySlug}-category-sort-quiz.html`;
+        }
+
+        function buildCategorySortManifestEntry(fileName, html) {
+            const category = getSetting('categoryName', 'Category Sort');
+            return {
+                title: getTitleFromHtml(html, `${category} - Category Sort`),
+                file: fileName,
+                type: 'category-sort',
+                category,
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        async function addToWebsite() {
+            const text = document.getElementById('generatedCode').value || await generateCode();
+            if (!text) return;
+            const fileName = getCategorySortQuizFileName();
+
+            if (!('showDirectoryPicker' in window)) {
+                downloadTextFile(text, fileName);
+                showToast(`Downloaded ${fileName}. Move it into your quizzes folder, then update quiz-list.json in the root website folder.`);
+                const status = document.getElementById('websiteStatus');
+                if (status) status.textContent = `Downloaded ${fileName}. Move it into quizzes/ and update quiz-list.json.`;
+                return;
+            }
+
+            try {
+                const status = document.getElementById('websiteStatus');
+                if (status) status.textContent = 'Choose the main website folder — the folder that contains index.html and the existing quizzes folder. Do not choose the quizzes folder itself.';
+                const websiteRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                await validateWebsiteRootFolder(websiteRootHandle);
+                const quizzesFolderHandle = await getExistingQuizzesFolder(websiteRootHandle);
+                const fileHandle = await quizzesFolderHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(text);
+                await writable.close();
+                await updateQuizManifest(websiteRootHandle, buildCategorySortManifestEntry(fileName, text));
+                if (status) status.textContent = `Added quizzes/${fileName} and updated quiz-list.json in the main website folder.`;
+                showToast('Added to website');
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    const status = document.getElementById('websiteStatus');
+                    if (status) status.textContent = 'Add to website cancelled.';
+                    return;
+                }
+                console.error(error);
+                const message = error && error.message ? error.message : 'Could not write directly to the website folder.';
+                const status = document.getElementById('websiteStatus');
+                if (status) status.textContent = message;
+                alert(message);
+            }
+        }
+
         async function downloadGame() {
             const text = $('generatedCode').value || await generateCode();
             if (!text) return;
-            const name = getSetting('categoryName', 'category-sort').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'category-sort';
-            const blob = new Blob([text], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = name + '-category-sort-game.html';
-            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            downloadTextFile(text, getCategorySortQuizFileName());
             showToast('Downloaded HTML');
         }
         function initBuilder() {
@@ -769,8 +935,18 @@
             $('generateCode').addEventListener('click', generateCode);
             $('copyCode').addEventListener('click', copyCode);
             $('downloadGame').addEventListener('click', downloadGame);
+            $('addToWebsite').addEventListener('click', addToWebsite);
         }
         document.addEventListener('DOMContentLoaded', initBuilder);
+    </script>
+
+
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+            });
+        }
     </script>
 </body>
 </html>

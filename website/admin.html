@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Admin</title>
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#5b3293">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Education Games">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+
+        :root {
+            --primary: #5b3293;
+            --secondary: #9c88c0;
+            --accent: #f9d65c;
+            --soft-bg: #f6f2fb;
+            --card-bg: #ffffff;
+            --ink: #1f2937;
+            --muted: #6b5a80;
+            --border: rgba(156, 136, 192, 0.35);
+            --success: #138a52;
+            --warning-bg: #fffbeb;
+            --warning-border: #fde68a;
+            --warning-text: #92400e;
+        }
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            font-family: 'Nunito', sans-serif;
+            color: var(--ink);
+            background: var(--soft-bg);
+            background-image:
+                radial-gradient(circle at 12px 12px, rgba(91, 50, 147, 0.08) 2px, transparent 0),
+                radial-gradient(circle at 36px 36px, rgba(156, 136, 192, 0.10) 2px, transparent 0);
+            background-size: 48px 48px;
+        }
+        .page { min-height: 100vh; display: flex; flex-direction: column; }
+        .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
+        header {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: clamp(1.8rem, 5vw, 4rem) 1.25rem;
+            border-bottom: 6px solid rgba(255,255,255,0.35);
+            box-shadow: 0 14px 40px rgba(91, 50, 147, 0.22);
+        }
+        header::before,
+        header::after {
+            content: '';
+            position: absolute;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            pointer-events: none;
+        }
+        header::before { width: 260px; height: 260px; right: -80px; top: -100px; }
+        header::after { width: 170px; height: 170px; left: -60px; bottom: -85px; }
+        .top-nav {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: clamp(1rem, 3vw, 2rem);
+        }
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 900;
+            color: white;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+        .brand-badge {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.18);
+            border: 2px solid rgba(255,255,255,0.25);
+        }
+        .nav-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
+        .nav-pill {
+            color: white;
+            text-decoration: none;
+            font-weight: 900;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.14);
+            border-radius: 999px;
+            padding: 0.55rem 0.85rem;
+            transition: transform .15s ease, background .15s ease;
+        }
+        .nav-pill:hover,
+        .nav-pill:focus-visible { transform: translateY(-2px); background: rgba(255,255,255,0.22); outline: none; }
+        .hero { position: relative; z-index: 1; text-align: center; }
+        h1 {
+            margin: 0;
+            font-size: clamp(2.1rem, 6vw, 4.4rem);
+            line-height: 0.98;
+            font-weight: 900;
+            letter-spacing: -0.045em;
+        }
+        .subtitle {
+            margin: 0.8rem auto 0;
+            max-width: 780px;
+            font-size: clamp(1rem, 2.2vw, 1.35rem);
+            font-weight: 800;
+            color: rgba(255,255,255,0.92);
+            line-height: 1.45;
+        }
+        main { flex: 1; padding: clamp(1.25rem, 4vw, 3rem) 0; }
+        .sections { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        .section-card {
+            background: var(--card-bg);
+            border: 3px solid var(--border);
+            border-radius: 2rem;
+            padding: clamp(1.25rem, 3vw, 2rem);
+            box-shadow: 0 18px 45px rgba(91,50,147,0.12);
+        }
+        .section-heading {
+            margin: 0;
+            color: #3f2368;
+            font-size: clamp(1.55rem, 3vw, 2.25rem);
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: -0.03em;
+        }
+        .section-intro {
+            margin: 0.65rem auto 1.75rem;
+            max-width: 780px;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 800;
+            line-height: 1.45;
+        }
+        .game-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
+        .game-links.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 780px; margin: 0 auto; }
+        .game-button {
+            min-height: 168px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            text-decoration: none;
+            text-align: center;
+            color: #3f2368;
+            background: #fbf9ff;
+            border: 3px solid rgba(156,136,192,0.4);
+            border-radius: 1.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 10px 24px rgba(91,50,147,0.10);
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+        }
+        .game-button.big { min-height: clamp(170px, 26vh, 230px); }
+        .game-button:hover,
+        .game-button:focus-visible {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 36px rgba(91,50,147,0.18);
+            border-color: var(--primary);
+            background: #fff;
+            outline: none;
+        }
+        .game-button:active { transform: translateY(-1px); }
+        .quiz-button { min-height: 132px; }
+        .icon {
+            width: 60px;
+            height: 60px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 1.85rem;
+            box-shadow: inset 0 0 0 3px rgba(255,255,255,0.18);
+            flex: 0 0 auto;
+        }
+        .icon.gold { background: linear-gradient(135deg, #facc15, #fb923c); color: #3f2368; }
+        .icon.green { background: linear-gradient(135deg, #22c55e, #14b8a6); }
+        .icon.blue { background: linear-gradient(135deg, #38bdf8, #6366f1); }
+        .button-title { font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight: 900; line-height: 1.12; }
+        .button-help { max-width: 260px; color: var(--muted); font-size: 0.96rem; font-weight: 800; line-height: 1.25; }
+        .quiz-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            margin: -0.5rem 0 1.25rem;
+        }
+        .tool-button {
+            border: 0;
+            border-radius: 999px;
+            padding: 0.85rem 1.1rem;
+            font: inherit;
+            font-weight: 900;
+            cursor: pointer;
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 8px 18px rgba(91,50,147,0.22);
+            transition: transform .15s ease, filter .15s ease;
+        }
+        .tool-button:hover,
+        .tool-button:focus-visible { transform: translateY(-2px); filter: brightness(1.04); outline: none; }
+        .tool-button.secondary {
+            background: #fff;
+            color: #3f2368;
+            border: 3px solid rgba(156,136,192,0.45);
+            box-shadow: 0 8px 18px rgba(91,50,147,0.08);
+        }
+        .status-box {
+            margin: 1rem auto 0;
+            max-width: 860px;
+            border-radius: 1.1rem;
+            padding: 0.9rem 1rem;
+            background: #f4f0fb;
+            border: 2px solid rgba(156,136,192,0.35);
+            color: var(--muted);
+            text-align: center;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+        .status-box.success { color: var(--success); background: #ecfdf5; border-color: #bbf7d0; }
+        .status-box.warning { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+        .helper-strip {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.65rem;
+            margin-top: 1.5rem;
+        }
+        .helper-chip {
+            border-radius: 999px;
+            background: rgba(255,255,255,0.85);
+            border: 2px solid rgba(156,136,192,0.35);
+            color: #3f2368;
+            padding: 0.55rem 0.85rem;
+            font-weight: 900;
+            box-shadow: 0 8px 18px rgba(91,50,147,0.08);
+        }
+        footer { padding: 1.25rem; text-align: center; color: var(--muted); font-weight: 800; }
+        @media (max-width: 860px) {
+            .top-nav { align-items: flex-start; flex-direction: column; }
+            .nav-actions { justify-content: flex-start; }
+            .game-links, .game-links.two { grid-template-columns: 1fr; }
+            .game-button { min-height: 132px; }
+        }
+        @media all and (display-mode: fullscreen), all and (display-mode: standalone) {
+            html, body { min-height: 100svh; overscroll-behavior: none; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="wrap top-nav">
+                <a class="brand" href="index.html" aria-label="Home">
+                    <span class="brand-badge">🎲</span>
+                    <span>Education Games</span>
+                </a>
+                <nav class="nav-actions" aria-label="Page navigation">
+                    <a class="nav-pill" href="index.html">Home</a>
+                    <a class="nav-pill" href="create-game.html">Create a game</a>
+                    <a class="nav-pill" href="play-quiz.html">Play a quiz</a>
+                </nav>
+            </div>
+            <div class="wrap hero">
+                <h1>Admin</h1>
+                <p class="subtitle">Keep the quiz list up to date without showing these controls to children.</p>
+            </div>
+        </header>
+
+        <main>
+            <div class="wrap sections">
+                <section class="section-card" aria-labelledby="admin-tools-heading">
+                    <h2 id="admin-tools-heading" class="section-heading">Quiz list tools</h2>
+                    <p class="section-intro">Use these tools if you are testing locally, refreshing the quiz list, or rebuilding quiz-list.json from the quizzes folder.</p>
+
+                    <div class="quiz-toolbar">
+                        <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose website folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
+                        <button class="tool-button secondary" id="refreshQuizzesButton" type="button">Refresh quizzes</button>
+                        <button class="tool-button secondary" id="rebuildManifestButton" type="button">Rebuild quiz list from folder</button>
+                    </div>
+
+                    <nav id="createdQuizzesGrid" class="game-links" aria-label="Created quiz links"></nav>
+                    <div id="quizStatus" class="status-box">Loading quizzes from quiz-list.json...</div>
+                </section>
+            </div>
+        </main>
+
+        <footer>Select the main website folder when using local admin tools, not the quizzes folder.</footer>
+    </div>
+</body>
+    <script>
+
+        const QUIZ_FOLDER_NAME = 'quizzes';
+        const MANIFEST_PATH = 'quiz-list.json';
+        const createdQuizzesGrid = document.getElementById('createdQuizzesGrid');
+        const quizStatus = document.getElementById('quizStatus');
+        let latestRenderedSignature = '';
+
+        function setStatus(message, type = '') {
+            quizStatus.textContent = message;
+            quizStatus.className = `status-box ${type}`.trim();
+        }
+
+        function tidyTitleFromFilename(fileName) {
+            return String(fileName)
+                .replace(/\.html?$/i, '')
+                .replace(/[-_]+/g, ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function safeRelativeQuizHref(fileName) {
+            return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(fileName)}`;
+        }
+
+        function normaliseManifestEntries(manifest) {
+            if (Array.isArray(manifest)) return manifest;
+            if (manifest && Array.isArray(manifest.quizzes)) return manifest.quizzes;
+            return [];
+        }
+
+        function iconForQuiz(quiz) {
+            const text = `${quiz.type || ''} ${quiz.file || ''} ${quiz.title || ''}`.toLowerCase();
+            if (text.includes('timeline')) return '⏳';
+            if (text.includes('memory')) return '🧠';
+            if (text.includes('matching') || text.includes('match')) return '🧩';
+            if (text.includes('sort') || text.includes('category')) return '🗂️';
+            return '🎮';
+        }
+
+        function renderQuizzes(quizzes, sourceText) {
+            const validQuizzes = quizzes
+                .filter(quiz => quiz && quiz.file && quiz.title)
+                .sort((a, b) => a.title.localeCompare(b.title));
+
+            const signature = JSON.stringify(validQuizzes.map(quiz => [quiz.file, quiz.title]));
+            if (signature === latestRenderedSignature) return;
+            latestRenderedSignature = signature;
+            createdQuizzesGrid.innerHTML = '';
+
+            if (!validQuizzes.length) {
+                setStatus('No quizzes are ready yet. Ask your teacher to add a quiz.', 'warning');
+                return;
+            }
+
+            for (const quiz of validQuizzes) {
+                const link = document.createElement('a');
+                link.className = 'game-button quiz-button';
+                link.href = quiz.href || safeRelativeQuizHref(quiz.file);
+                link.innerHTML = `
+                    <span class="icon" aria-hidden="true"></span>
+                    <span class="button-title"></span>
+                    <span class="button-help">Tap to play</span>
+                `;
+                link.querySelector('.icon').textContent = iconForQuiz(quiz);
+                link.querySelector('.button-title').textContent = quiz.title;
+                createdQuizzesGrid.appendChild(link);
+            }
+            setStatus(`${validQuizzes.length} quiz${validQuizzes.length === 1 ? '' : 'zes'} ready to play${sourceText ? ` from ${sourceText}` : ''}.`, 'success');
+        }
+
+        async function loadFromHostedManifest() {
+            try {
+                const response = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Could not load ${MANIFEST_PATH}.`);
+                const manifest = await response.json();
+                const entries = normaliseManifestEntries(manifest);
+                const quizzes = [];
+
+                for (const entry of entries) {
+                    const file = typeof entry === 'string' ? entry : entry.file;
+                    if (!file || !/\.html?$/i.test(file)) continue;
+                    const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file);
+                    const type = typeof entry === 'object' && entry.type ? entry.type : '';
+                    quizzes.push({ file, title, type });
+                }
+
+                renderQuizzes(quizzes, 'the quiz list');
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+
+        const SCAN_INTERVAL_MS = 10000;
+        const chooseQuizzesFolderButton = document.getElementById('chooseQuizzesFolderButton');
+        const refreshQuizzesButton = document.getElementById('refreshQuizzesButton');
+        const rebuildManifestButton = document.getElementById('rebuildManifestButton');
+        let selectedWebsiteFolderHandle = null;
+        let scanTimer = null;
+
+        function titleFromHtml(html, fallback) {
+            try {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const title = (doc.querySelector('title')?.textContent || '').trim();
+                const h1 = (doc.querySelector('h1')?.textContent || '').trim();
+                const genericTitles = [
+                    'Historical Timeline Game',
+                    'Timeline Game',
+                    'Match the Pairs Game',
+                    'Memory Match Game',
+                    'Category Sort Game'
+                ];
+                if (title && !genericTitles.includes(title)) return title;
+                if (h1) return h1;
+                return title || fallback;
+            } catch (error) {
+                const match = String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                return match ? match[1].replace(/\s+/g, ' ').trim() : fallback;
+            }
+        }
+
+        async function loadFromSelectedWebsiteFolder() {
+            if (!selectedWebsiteFolderHandle) return false;
+            try {
+                const manifestHandle = await selectedWebsiteFolderHandle.getFileHandle(MANIFEST_PATH);
+                const manifestFile = await manifestHandle.getFile();
+                const manifest = JSON.parse(await manifestFile.text());
+                const entries = normaliseManifestEntries(manifest);
+                await selectedWebsiteFolderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+                const quizzes = entries
+                    .map(entry => {
+                        const file = typeof entry === 'string' ? entry : entry.file;
+                        const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file || 'quiz.html');
+                        const type = typeof entry === 'object' && entry.type ? entry.type : '';
+                        return { file, title, type, href: safeRelativeQuizHref(file) };
+                    })
+                    .filter(quiz => quiz.file && /\.html?$/i.test(quiz.file));
+                renderQuizzes(quizzes, 'the selected website folder');
+                return true;
+            } catch (error) {
+                setStatus('The selected folder is not the website root folder. Choose the folder that contains index.html, quiz-list.json and the quizzes folder.', 'warning');
+                return false;
+            }
+        }
+
+        function inferQuizType(fileName, title) {
+            const text = `${fileName} ${title}`.toLowerCase();
+            if (text.includes('timeline')) return 'timeline';
+            if (text.includes('memory')) return 'memory-match';
+            if (text.includes('matching') || text.includes('match')) return 'match';
+            if (text.includes('sort') || text.includes('category')) return 'category-sort';
+            return 'quiz';
+        }
+
+        async function ensureReadWritePermission(directoryHandle) {
+            if (!directoryHandle.requestPermission) return true;
+            const options = { mode: 'readwrite' };
+            if ((await directoryHandle.queryPermission(options)) === 'granted') return true;
+            return (await directoryHandle.requestPermission(options)) === 'granted';
+        }
+
+        async function chooseWebsiteRootFolderForWriting() {
+            if (!window.showDirectoryPicker) {
+                throw new Error('This browser does not support direct folder access. Use Chrome or Edge.');
+            }
+            const folderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            const hasPermission = await ensureReadWritePermission(folderHandle);
+            if (!hasPermission) throw new Error('Permission to update quiz-list.json was not granted.');
+            await folderHandle.getFileHandle('index.html', { create: false });
+            await folderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+            return folderHandle;
+        }
+
+        async function rebuildManifestFromQuizzesFolder() {
+            try {
+                setStatus('Choose the main website folder. I will scan the quizzes folder and rebuild quiz-list.json...', 'warning');
+                const websiteFolderHandle = await chooseWebsiteRootFolderForWriting();
+                selectedWebsiteFolderHandle = websiteFolderHandle;
+                const quizzesFolderHandle = await websiteFolderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+                const quizzes = [];
+
+                for await (const [fileName, entryHandle] of quizzesFolderHandle.entries()) {
+                    if (entryHandle.kind !== 'file' || !/\.html?$/i.test(fileName)) continue;
+                    const file = await entryHandle.getFile();
+                    const html = await file.text();
+                    const title = titleFromHtml(html, tidyTitleFromFilename(fileName));
+                    quizzes.push({
+                        title,
+                        file: fileName,
+                        type: inferQuizType(fileName, title),
+                        updatedAt: new Date(file.lastModified || Date.now()).toISOString()
+                    });
+                }
+
+                quizzes.sort((a, b) => a.title.localeCompare(b.title));
+                const manifest = { quizzes, updatedAt: new Date().toISOString() };
+                const manifestHandle = await websiteFolderHandle.getFileHandle(MANIFEST_PATH, { create: true });
+                const writable = await manifestHandle.createWritable();
+                await writable.write(JSON.stringify(manifest, null, 2));
+                await writable.close();
+                renderQuizzes(quizzes.map(quiz => ({ ...quiz, href: safeRelativeQuizHref(quiz.file) })), 'the rebuilt quiz-list.json');
+                setStatus(`Rebuilt quiz-list.json with ${quizzes.length} quiz${quizzes.length === 1 ? '' : 'zes'}.`, 'success');
+                startPeriodicScan();
+            } catch (error) {
+                setStatus(error.message || 'Could not rebuild quiz-list.json. Choose the main website folder that contains index.html and the quizzes folder.', 'warning');
+            }
+        }
+
+        async function refreshQuizzes() {
+            latestRenderedSignature = '';
+            if (selectedWebsiteFolderHandle) {
+                await loadFromSelectedWebsiteFolder();
+                return;
+            }
+            const loaded = await loadFromHostedManifest();
+            if (!loaded) {
+                setStatus('Could not automatically read quiz-list.json. This usually happens if you opened this page by double-clicking it. Use VS Code Live Server, GitHub Pages, or click Choose website folder for local testing.', 'warning');
+            }
+        }
+
+        function startPeriodicScan() {
+            if (scanTimer) clearInterval(scanTimer);
+            scanTimer = setInterval(async () => {
+                if (selectedWebsiteFolderHandle) await loadFromSelectedWebsiteFolder();
+                else await loadFromHostedManifest();
+            }, SCAN_INTERVAL_MS);
+        }
+
+        chooseQuizzesFolderButton.addEventListener('click', async () => {
+            if (!window.showDirectoryPicker) {
+                setStatus('This browser does not support direct folder access. Use Chrome or Edge for local testing, or test through VS Code Live Server / GitHub Pages.', 'warning');
+                return;
+            }
+            try {
+                selectedWebsiteFolderHandle = await window.showDirectoryPicker({ mode: 'read' });
+                await loadFromSelectedWebsiteFolder();
+                startPeriodicScan();
+            } catch (error) {
+                setStatus('Folder selection cancelled. Choose the website root folder when you are ready.', 'warning');
+            }
+        });
+
+        refreshQuizzesButton.addEventListener('click', refreshQuizzes);
+        rebuildManifestButton.addEventListener('click', rebuildManifestFromQuizzesFolder);
+        refreshQuizzes().then(startPeriodicScan);
+
+    </script>
+
+
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+            });
+        }
+    </script>
+
+</html>
