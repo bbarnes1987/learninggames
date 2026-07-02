@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Sort Game Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --builder-primary: #5b3293;
+            --builder-secondary: #9c88c0;
+            --builder-bg: #f6f2fb;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--builder-bg);
+            background-image:
+                radial-gradient(circle at 12px 12px, rgba(91, 50, 147, 0.08) 2px, transparent 0),
+                radial-gradient(circle at 36px 36px, rgba(156, 136, 192, 0.10) 2px, transparent 0);
+            background-size: 48px 48px;
+        }
+        .builder-gradient { background: linear-gradient(135deg, var(--builder-primary), var(--builder-secondary)); }
+        .builder-card {
+            background: white;
+            border: 3px solid rgba(156, 136, 192, 0.28);
+            box-shadow: 0 18px 45px rgba(91, 50, 147, 0.11);
+        }
+        .field-label { font-weight: 900; color: #3f2368; display: block; margin-bottom: 0.35rem; }
+        .field-help { color: #6b5a80; font-size: 0.86rem; line-height: 1.25rem; margin-top: 0.3rem; }
+        .input-field, .select-field, .textarea-field {
+            width: 100%; border: 2px solid rgba(156, 136, 192, 0.45); border-radius: 1rem;
+            padding: 0.8rem 0.95rem; outline: none; background: #fff; transition: border-color 0.2s ease, box-shadow 0.2s ease; font-weight: 700;
+        }
+        .textarea-field { min-height: 82px; resize: vertical; }
+        .input-field:focus, .select-field:focus, .textarea-field:focus {
+            border-color: var(--builder-primary); box-shadow: 0 0 0 4px rgba(91, 50, 147, 0.14);
+        }
+        .input-field::placeholder, .textarea-field::placeholder { color: #aaa0b8; opacity: 1; font-weight: 600; }
+        .btn-primary {
+            background: var(--builder-primary); color: white; font-weight: 900; border-radius: 999px; padding: 0.85rem 1.35rem;
+            box-shadow: 0 10px 22px rgba(91, 50, 147, 0.22); transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-secondary {
+            background: #eee7f7; color: #3f2368; font-weight: 900; border-radius: 999px; padding: 0.85rem 1.35rem;
+            border: 2px solid rgba(91, 50, 147, 0.16); transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .btn-secondary:hover { filter: brightness(0.98); transform: translateY(-1px); }
+        .category-editor, .sort-card-editor {
+            border: 3px solid rgba(156, 136, 192, 0.30); border-radius: 1.5rem; background: #fbf9ff; overflow: hidden;
+        }
+        .editor-heading { background: #eee7f7; color: #3f2368; }
+        .image-preview {
+            width: 100%; max-width: 220px; max-height: 140px; object-fit: contain; border-radius: 1rem;
+            border: 2px solid #eee7f7; background: #fafafa; display: none;
+        }
+        .output-area {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            min-height: 360px; white-space: pre; overflow: auto; font-size: 0.78rem; line-height: 1.15rem;
+        }
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: #2f174f; color: #fff; padding: 0.85rem 1.25rem; border-radius: 999px;
+            font-weight: 900; box-shadow: 0 15px 35px rgba(0,0,0,0.2); opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease; z-index: 1000;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <header class="builder-gradient text-white p-6 shadow-xl border-b-4 border-white/30">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black">Category Sort Game Builder</h1>
+                <p class="font-bold text-white/90 mt-1">Create a child-friendly sorting game using text cards, image cards, or a mixture of both.</p>
+            </div>
+            <div class="bg-white/16 rounded-2xl px-4 py-3 border border-white/25 text-sm font-extrabold">
+                Categories • Cards • Copy code • Download HTML
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <h2 class="text-2xl font-black text-[#3f2368]">1. Game settings</h2>
+            <p class="text-[#6b5a80] font-bold mt-1 mb-5">These settings control the generated category sort game.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div>
+                    <label class="field-label" for="gameTitle">Game title</label>
+                    <input id="gameTitle" class="input-field" placeholder="Category Sort! 🗂️">
+                </div>
+                <div>
+                    <label class="field-label" for="categoryName">Topic name</label>
+                    <input id="categoryName" class="input-field" placeholder="Computer Hardware">
+                </div>
+                <div>
+                    <label class="field-label" for="instructionText">Short instruction</label>
+                    <input id="instructionText" class="input-field" placeholder="Drag each card into the correct category.">
+                </div>
+                <div>
+                    <label class="field-label" for="backgroundColour">Background colour</label>
+                    <input id="backgroundColour" type="color" class="input-field h-[56px] p-2" value="#f6f2fb">
+                </div>
+                <div>
+                    <label class="field-label" for="headingSectionColour">Heading section colour</label>
+                    <input id="headingSectionColour" type="color" class="input-field h-[56px] p-2" value="#5b3293">
+                </div>
+                <div>
+                    <label class="field-label" for="headingTextColour">Heading text colour</label>
+                    <input id="headingTextColour" type="color" class="input-field h-[56px] p-2" value="#ffffff">
+                </div>
+                <div>
+                    <label class="field-label" for="wrongPenaltySeconds">Wrong placement penalty seconds</label>
+                    <input id="wrongPenaltySeconds" type="number" min="0" max="60" step="1" class="input-field" placeholder="5">
+                </div>
+                <div>
+                    <label class="field-label" for="soundEffectsOnByDefault">Sound effects by default</label>
+                    <select id="soundEffectsOnByDefault" class="select-field">
+                        <option value="false" selected>Sound off by default</option>
+                        <option value="true">Sound on by default</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label" for="categoryCount">Number of categories</label>
+                    <select id="categoryCount" class="select-field"></select>
+                </div>
+                <div>
+                    <label class="field-label" for="cardCount">Number of cards</label>
+                    <select id="cardCount" class="select-field"></select>
+                </div>
+            </div>
+        </section>
+
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">2. Categories</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">Name the boxes that children will sort cards into.</p>
+                </div>
+                <button id="refreshCategories" class="btn-secondary" type="button">Update category boxes</button>
+            </div>
+            <div id="categoriesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">3. Sort cards</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">Each card needs some text, a correct category, and optionally an image link or uploaded image.</p>
+                </div>
+                <button id="refreshCards" class="btn-secondary" type="button">Update card boxes</button>
+            </div>
+            <div class="bg-[#f5effc] border-2 border-[#9c88c0]/30 rounded-2xl p-4 mb-5 text-[#3f2368] font-bold">
+                For Google Drive images, teachers can paste the normal share link. The builder will automatically convert it into a thumbnail link in the generated game.
+            </div>
+            <div id="cardsContainer" class="space-y-5"></div>
+        </section>
+
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">4. Generate the game</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">Generate the standalone HTML, then copy it or download it as a file.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="generateCode" class="btn-primary" type="button">Generate game code</button>
+                    <button id="copyCode" class="btn-secondary" type="button">Copy code</button>
+                    <button id="downloadGame" class="btn-secondary" type="button">Download HTML</button>
+                </div>
+            </div>
+            <textarea id="generatedCode" class="input-field output-area" placeholder="Your generated game code will appear here after you click Generate game code."></textarea>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">Copied!</div>
+
+    <script>
+        const uploadedImages = new Map();
+        let categories = ['Input Devices', 'Output Devices', 'Storage Devices'];
+        let cards = [
+            { text: 'Keyboard', categoryIndex: 0, imageUrl: '' },
+            { text: 'Mouse', categoryIndex: 0, imageUrl: '' },
+            { text: 'Monitor', categoryIndex: 1, imageUrl: '' },
+            { text: 'Printer', categoryIndex: 1, imageUrl: '' },
+            { text: 'SSD', categoryIndex: 2, imageUrl: '' },
+            { text: 'USB stick', categoryIndex: 2, imageUrl: '' }
+        ];
+        const sampleCards = ['Keyboard', 'Mouse', 'Monitor', 'Printer', 'SSD', 'USB stick', 'Scanner', 'Speakers', 'Webcam', 'Hard drive', 'Microphone', 'Projector'];
+
+        function $(id) { return document.getElementById(id); }
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        function showToast(message) {
+            const toast = $('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function(){ toast.classList.remove('show'); }, 1800);
+        }
+        function populateSelects() {
+            const catSelect = $('categoryCount');
+            catSelect.innerHTML = '';
+            for (let i = 2; i <= 8; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + ' categories';
+                if (i === categories.length) option.selected = true;
+                catSelect.appendChild(option);
+            }
+            const cardSelect = $('cardCount');
+            cardSelect.innerHTML = '';
+            for (let i = 4; i <= 40; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + ' cards';
+                if (i === cards.length) option.selected = true;
+                cardSelect.appendChild(option);
+            }
+        }
+        function collectCategories() {
+            const count = Number($('categoryCount').value || categories.length);
+            const next = [];
+            for (let i = 0; i < count; i++) {
+                const input = $('categoryName-' + i);
+                next.push((input && input.value.trim()) || categories[i] || ('Category ' + (i + 1)));
+            }
+            categories = next;
+            cards.forEach(function(card){ if (card.categoryIndex >= categories.length) card.categoryIndex = 0; });
+        }
+        function collectCards() {
+            const count = Number($('cardCount').value || cards.length);
+            const next = [];
+            for (let i = 0; i < count; i++) {
+                next.push({
+                    text: ($('cardText-' + i)?.value || cards[i]?.text || '').trim(),
+                    categoryIndex: Number($('cardCategory-' + i)?.value || cards[i]?.categoryIndex || 0),
+                    imageUrl: ($('cardImageUrl-' + i)?.value || cards[i]?.imageUrl || '').trim()
+                });
+            }
+            cards = next;
+        }
+        function resizeCategories() {
+            collectCategories();
+            const count = Number($('categoryCount').value || 3);
+            while (categories.length < count) categories.push('Category ' + (categories.length + 1));
+            if (categories.length > count) categories = categories.slice(0, count);
+            cards.forEach(function(card){ if (card.categoryIndex >= categories.length) card.categoryIndex = 0; });
+            renderCategories();
+            renderCards();
+        }
+        function resizeCards() {
+            collectCards();
+            const count = Number($('cardCount').value || 6);
+            while (cards.length < count) cards.push({ text: '', categoryIndex: 0, imageUrl: '' });
+            if (cards.length > count) {
+                for (const key of Array.from(uploadedImages.keys())) {
+                    const index = Number(String(key).replace('card-', ''));
+                    if (index >= count) uploadedImages.delete(key);
+                }
+                cards = cards.slice(0, count);
+            }
+            renderCards();
+        }
+        function renderCategories() {
+            const container = $('categoriesContainer');
+            container.innerHTML = '';
+            categories.forEach(function(category, index) {
+                const div = document.createElement('div');
+                div.className = 'category-editor';
+                div.innerHTML = '<div class="editor-heading px-5 py-3 font-black text-lg">Category ' + (index + 1) + '</div>' +
+                    '<div class="p-4"><label class="field-label" for="categoryName-' + index + '">Category name</label>' +
+                    '<input id="categoryName-' + index + '" class="input-field" value="' + escapeHtml(category) + '" placeholder="e.g. Input Devices"></div>';
+                container.appendChild(div);
+            });
+        }
+        function categoryOptions(selectedIndex) {
+            return categories.map(function(category, index) {
+                return '<option value="' + index + '"' + (index === Number(selectedIndex) ? ' selected' : '') + '>' + escapeHtml(category) + '</option>';
+            }).join('');
+        }
+        function renderCards() {
+            const container = $('cardsContainer');
+            container.innerHTML = '';
+            cards.forEach(function(card, index) {
+                const key = 'card-' + index;
+                const article = document.createElement('article');
+                article.className = 'sort-card-editor';
+                article.innerHTML = '<div class="editor-heading px-5 py-3 flex items-center justify-between">' +
+                    '<h3 class="font-black text-xl">Card ' + (index + 1) + '</h3>' +
+                    '<span class="font-extrabold text-sm opacity-80">Choose the correct category</span></div>' +
+                    '<div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">' +
+                    '<div><label class="field-label" for="cardText-' + index + '">Card text</label>' +
+                    '<textarea id="cardText-' + index + '" class="textarea-field" placeholder="' + escapeHtml(sampleCards[index] || ('Card ' + (index + 1))) + '">' + escapeHtml(card.text) + '</textarea></div>' +
+                    '<div><label class="field-label" for="cardCategory-' + index + '">Correct category</label>' +
+                    '<select id="cardCategory-' + index + '" class="select-field">' + categoryOptions(card.categoryIndex) + '</select>' +
+                    '<p class="field-help">This is where the card must be dropped.</p></div>' +
+                    '<div><label class="field-label" for="cardImageUrl-' + index + '">Image link (optional)</label>' +
+                    '<input id="cardImageUrl-' + index + '" class="input-field image-url-input" data-key="' + key + '" value="' + escapeHtml(card.imageUrl) + '" placeholder="https://drive.google.com/file/d/IMAGE_ID/view?usp=drive_link">' +
+                    '<p class="field-help">Google Drive share links will be converted automatically.</p>' +
+                    '<img id="' + key + '-url-preview" class="image-preview mt-3" alt="Image link preview"></div>' +
+                    '<div><label class="field-label" for="' + key + '-upload">Upload image (optional)</label>' +
+                    '<input id="' + key + '-upload" type="file" accept="image/*" class="input-field upload-input" data-key="' + key + '">' +
+                    '<p class="field-help">If uploaded, this image will be used instead of the image link.</p>' +
+                    '<img id="' + key + '-upload-preview" class="image-preview mt-3" alt="Uploaded image preview"></div>' +
+                    '</div>';
+                container.appendChild(article);
+            });
+            wireImageControls();
+            refreshAllPreviews();
+            activateClickToClearPlaceholders();
+        }
+        function activateClickToClearPlaceholders() {
+            document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(function(field) {
+                if (field.dataset.placeholderReady === 'true') return;
+                field.dataset.placeholderReady = 'true';
+                field.dataset.originalPlaceholder = field.getAttribute('placeholder') || '';
+                field.addEventListener('focus', function(){ field.setAttribute('placeholder', ''); });
+                field.addEventListener('blur', function(){ if (!field.value.trim()) field.setAttribute('placeholder', field.dataset.originalPlaceholder || ''); });
+            });
+        }
+        function normaliseDriveImageLink(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const patterns = [
+                /drive\.google\.com\/file\/d\/([^/]+)/i,
+                /drive\.google\.com\/open\?id=([^&]+)/i,
+                /drive\.google\.com\/uc\?id=([^&]+)/i,
+                /drive\.google\.com\/thumbnail\?id=([^&]+)/i,
+                /[?&]id=([^&]+)/i
+            ];
+            for (const pattern of patterns) {
+                const match = raw.match(pattern);
+                if (match && match[1]) {
+                    const id = decodeURIComponent(match[1]).replace(/[^a-zA-Z0-9_-]/g, '');
+                    if (id) return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w500';
+                }
+            }
+            return raw;
+        }
+        function wireImageControls() {
+            document.querySelectorAll('.upload-input').forEach(function(input) {
+                if (input.dataset.wired === 'true') return;
+                input.dataset.wired = 'true';
+                input.addEventListener('change', async function() {
+                    const key = input.dataset.key;
+                    const file = input.files && input.files[0];
+                    const preview = $(key + '-upload-preview');
+                    if (!file) {
+                        uploadedImages.delete(key);
+                        if (preview) preview.style.display = 'none';
+                        return;
+                    }
+                    try {
+                        const dataUrl = await resizeImageFile(file, 700, 0.82);
+                        uploadedImages.set(key, dataUrl);
+                        if (preview) {
+                            preview.src = dataUrl;
+                            preview.style.display = 'block';
+                        }
+                    } catch (error) { showToast('Could not read that image'); }
+                });
+            });
+            document.querySelectorAll('.image-url-input').forEach(function(input) {
+                if (input.dataset.wired === 'true') return;
+                input.dataset.wired = 'true';
+                input.addEventListener('input', function(){ refreshUrlPreview(input.dataset.key); });
+            });
+        }
+        function refreshUrlPreview(key) {
+            const input = document.querySelector('[data-key="' + key + '"].image-url-input');
+            const preview = $(key + '-url-preview');
+            if (!input || !preview) return;
+            const url = normaliseDriveImageLink(input.value);
+            if (!url) { preview.style.display = 'none'; return; }
+            preview.src = url;
+            preview.style.display = 'block';
+            preview.onerror = function(){ preview.style.display = 'none'; };
+        }
+        function refreshAllPreviews() {
+            cards.forEach(function(_, index) {
+                const key = 'card-' + index;
+                refreshUrlPreview(key);
+                const uploadPreview = $(key + '-upload-preview');
+                const uploaded = uploadedImages.get(key);
+                if (uploadPreview && uploaded) {
+                    uploadPreview.src = uploaded;
+                    uploadPreview.style.display = 'block';
+                }
+            });
+        }
+        function resizeImageFile(file, maxSize, quality) {
+            return new Promise(function(resolve, reject) {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = function() {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = function() {
+                        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.width * scale));
+                        canvas.height = Math.max(1, Math.round(img.height * scale));
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        function getSetting(id, fallback) {
+            const value = ($(id)?.value || '').trim();
+            return value || fallback;
+        }
+        function collectAllData() {
+            collectCategories();
+            collectCards();
+            return {
+                settings: {
+                    gameTitle: getSetting('gameTitle', 'Category Sort! 🗂️'),
+                    categoryName: getSetting('categoryName', 'Computer Hardware'),
+                    instructionText: getSetting('instructionText', 'Drag each card into the correct category.'),
+                    backgroundColour: $('backgroundColour').value || '#f6f2fb',
+                    headingSectionColour: $('headingSectionColour').value || '#5b3293',
+                    headingTextColour: $('headingTextColour').value || '#ffffff',
+                    wrongPlacementPenaltySeconds: Math.max(0, Number($('wrongPenaltySeconds').value || 5)),
+                    soundEffectsOnByDefault: $('soundEffectsOnByDefault').value === 'true'
+                },
+                categories: categories.map(function(name, index){ return { id: 'cat-' + index, name: name }; }),
+                cards: cards.map(function(card, index) {
+                    const key = 'card-' + index;
+                    return {
+                        id: key,
+                        text: card.text,
+                        categoryId: 'cat-' + Number(card.categoryIndex || 0),
+                        image: uploadedImages.get(key) || normaliseDriveImageLink(card.imageUrl)
+                    };
+                })
+            };
+        }
+        function validateData(data) {
+            const problems = [];
+            data.categories.forEach(function(category, index){ if (!category.name.trim()) problems.push('Category ' + (index + 1) + ' needs a name.'); });
+            data.cards.forEach(function(card, index) {
+                if (!card.text.trim()) problems.push('Card ' + (index + 1) + ' needs text.');
+                if (!data.categories.some(function(c){ return c.id === card.categoryId; })) problems.push('Card ' + (index + 1) + ' needs a valid category.');
+            });
+            return problems;
+        }
+        function safeJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
+        function generateStandaloneGame(data) {
+            const json = safeJson(data);
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Sort Game</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --heading: #5b3293; --headingText: #ffffff; --bg: #f6f2fb; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at 12px 12px, rgba(91,50,147,0.08) 2px, transparent 0), radial-gradient(circle at 36px 36px, rgba(156,136,192,0.1) 2px, transparent 0);
+            background-size: 48px 48px;
+        }
+        .game-header { background: white; border-bottom: 5px solid var(--heading); box-shadow: 0 4px 18px rgba(15,23,42,0.08); }
+        .stat-pill { background: color-mix(in srgb, var(--heading) 12%, white); color: var(--heading); border: 2px solid color-mix(in srgb, var(--heading) 30%, white); }
+        .heading-bar { background: var(--heading); color: var(--headingText); }
+        .sort-card { border: 3px solid #4b5563; background: white; min-height: 150px; cursor: grab; transition: transform .15s ease, box-shadow .15s ease; }
+        .sort-card:hover { transform: translateY(-2px); box-shadow: 0 12px 20px rgba(0,0,0,.12); }
+        .sort-card.selected { outline: 7px solid #60a5fa; outline-offset: 2px; }
+        .sort-card.locked { cursor: default; border-color: var(--heading); }
+        .drop-zone { min-height: 230px; border: 4px dashed color-mix(in srgb, var(--heading) 28%, white); background: rgba(255,255,255,.78); }
+        .drop-zone.drag-over { background: color-mix(in srgb, var(--heading) 9%, white); transform: scale(1.01); }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-8px)} 80%{transform:translateX(8px)} }
+        .shake { animation: shake .38s ease-in-out; }
+        @keyframes pop { 0%{transform:scale(.75);opacity:0} 80%{transform:scale(1.05);opacity:1} 100%{transform:scale(1);opacity:1} }
+        .pop { animation: pop .35s ease-out; }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+    <script type="application/json" id="game-data">${json}<\/script>
+
+    <header class="game-header p-4 md:p-5 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex flex-col gap-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div>
+                    <h1 id="gameTitle" class="text-3xl md:text-4xl font-black"></h1>
+                    <p id="instructionText" class="text-gray-600 font-bold mt-1"></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="soundToggle" class="heading-bar rounded-full px-5 py-3 font-black shadow-lg" type="button">Sound: Off</button>
+                    <button onclick="location.reload()" class="heading-bar rounded-full px-5 py-3 font-black shadow-lg" type="button">Start Again</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="stat-pill rounded-2xl px-3 py-2 text-center font-black">Score: <span id="scoreDisplay">0</span> / <span id="totalDisplay">0</span></div>
+                <div class="stat-pill rounded-2xl px-3 py-2 text-center font-black">Time: <span id="timerDisplay">0:00.0</span></div>
+                <div class="stat-pill rounded-2xl px-3 py-2 text-center font-black">Mistakes: <span id="mistakeDisplay">0</span></div>
+                <div class="stat-pill rounded-2xl px-3 py-2 text-center font-black">Penalty: <span id="penaltyDisplay">+0:00.0</span></div>
+                <div class="stat-pill rounded-2xl px-3 py-2 text-center font-black">Best: <span id="bestDisplay">-</span></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        <section class="bg-white/90 rounded-3xl shadow-xl border-4 border-white p-4 md:p-6">
+            <h2 id="categoryHeading" class="heading-bar text-center rounded-2xl py-2 px-4 font-black text-xl uppercase tracking-widest mb-5"></h2>
+            <div id="categoriesGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        </section>
+        <section class="bg-white/90 rounded-3xl shadow-xl border-4 border-white overflow-hidden">
+            <div class="heading-bar text-center py-3 font-black text-xl uppercase tracking-widest">Cards to Sort</div>
+            <div id="cardBank" class="p-5 flex flex-wrap justify-center gap-4 min-h-[180px]"></div>
+        </section>
+    </main>
+
+    <div id="winModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl p-7 max-w-md w-full text-center shadow-2xl pop">
+            <div class="text-6xl mb-3">🏆</div>
+            <h2 class="text-4xl font-black mb-2" style="color:var(--heading)">Sorted!</h2>
+            <p class="text-gray-600 font-bold mb-5">You sorted every card into the correct category.</p>
+            <div class="bg-gray-50 rounded-2xl p-4 font-black text-left space-y-1 mb-5">
+                <div>Raw time: <span id="finalRaw"></span></div>
+                <div>Mistakes: <span id="finalMistakes"></span></div>
+                <div>Penalty: <span id="finalPenalty"></span></div>
+                <div>Final score time: <span id="finalScore"></span></div>
+                <div>Best score: <span id="finalBest"></span></div>
+            </div>
+            <button onclick="location.reload()" class="heading-bar w-full rounded-full px-5 py-3 font-black text-xl shadow-lg">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const DATA = JSON.parse(document.getElementById('game-data').textContent);
+        const settings = DATA.settings;
+        const categories = DATA.categories;
+        const cards = DATA.cards.slice().sort(function(){ return Math.random() - 0.5; });
+        let selectedCard = null;
+        let draggedCard = null;
+        let score = 0;
+        let mistakes = 0;
+        let started = false;
+        let startTime = 0;
+        let timerId = null;
+        let elapsedMs = 0;
+        let soundOn = !!settings.soundEffectsOnByDefault;
+        const bestKey = 'category-sort-best-' + btoa(unescape(encodeURIComponent(settings.gameTitle + '-' + settings.categoryName))).slice(0, 40);
+
+        function $(id) { return document.getElementById(id); }
+        function formatMs(ms) {
+            const totalTenths = Math.max(0, Math.floor(ms / 100));
+            const minutes = Math.floor(totalTenths / 600);
+            const seconds = Math.floor((totalTenths % 600) / 10);
+            const tenths = totalTenths % 10;
+            return minutes + ':' + String(seconds).padStart(2, '0') + '.' + tenths;
+        }
+        function penaltyMs() { return mistakes * Number(settings.wrongPlacementPenaltySeconds || 0) * 1000; }
+        function updateStats() {
+            $('scoreDisplay').textContent = score;
+            $('totalDisplay').textContent = DATA.cards.length;
+            $('timerDisplay').textContent = formatMs(elapsedMs);
+            $('mistakeDisplay').textContent = mistakes;
+            $('penaltyDisplay').textContent = '+' + formatMs(penaltyMs());
+            const best = sessionStorage.getItem(bestKey);
+            $('bestDisplay').textContent = best ? formatMs(Number(best)) : '-';
+        }
+        function startTimer() {
+            if (started) return;
+            started = true;
+            startTime = performance.now();
+            timerId = setInterval(function(){ elapsedMs = performance.now() - startTime; updateStats(); }, 100);
+        }
+        function stopTimer() {
+            if (timerId) clearInterval(timerId);
+            elapsedMs = performance.now() - startTime;
+            updateStats();
+        }
+        function beep(type) {
+            if (!soundOn) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                const freq = type === 'wrong' ? 160 : type === 'win' ? 660 : 440;
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.001, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+                osc.start(); osc.stop(ctx.currentTime + 0.2);
+            } catch (e) {}
+        }
+        function setSoundButton() { $('soundToggle').textContent = soundOn ? 'Sound: On' : 'Sound: Off'; }
+        function escapeText(value) { return String(value ?? ''); }
+        function createCard(card) {
+            const div = document.createElement('div');
+            div.className = 'sort-card rounded-2xl p-3 w-[150px] flex flex-col items-center justify-between text-center shadow-md pop';
+            div.draggable = true;
+            div.dataset.id = card.id;
+            div.dataset.categoryId = card.categoryId;
+
+            const topic = document.createElement('div');
+            topic.className = 'w-full flex items-center gap-1 text-xs font-black text-gray-600 mb-2';
+            topic.innerHTML = '<span class="w-6 h-6 rounded-full bg-gray-600 text-white flex items-center justify-center">↘</span><span>' + escapeText(settings.categoryName) + '</span>';
+            div.appendChild(topic);
+
+            const imageWrap = document.createElement('div');
+            imageWrap.className = 'w-20 h-20 rounded-full border-[3px] border-gray-600 mb-3 bg-white flex items-center justify-center overflow-hidden text-4xl';
+            if (card.image) {
+                const img = document.createElement('img');
+                img.src = card.image;
+                img.alt = card.text;
+                img.className = 'w-full h-full object-cover';
+                img.onerror = function(){ imageWrap.textContent = '🗂️'; };
+                imageWrap.appendChild(img);
+            } else {
+                imageWrap.textContent = '🗂️';
+            }
+            div.appendChild(imageWrap);
+
+            const text = document.createElement('p');
+            text.className = 'font-black text-gray-800 text-sm leading-tight';
+            text.textContent = card.text;
+            div.appendChild(text);
+
+            div.addEventListener('dragstart', function(e){ startTimer(); draggedCard = div; div.classList.add('opacity-50'); e.dataTransfer.setData('text/plain', card.id); clearSelected(); });
+            div.addEventListener('dragend', function(){ div.classList.remove('opacity-50'); draggedCard = null; });
+            div.addEventListener('click', function(){
+                if (div.classList.contains('locked')) return;
+                startTimer();
+                if (selectedCard === div) clearSelected();
+                else { clearSelected(); selectedCard = div; div.classList.add('selected'); }
+            });
+            return div;
+        }
+        function createCategory(category) {
+            const zone = document.createElement('div');
+            zone.className = 'drop-zone rounded-3xl p-4 transition-all';
+            zone.dataset.categoryId = category.id;
+            const title = document.createElement('h3');
+            title.className = 'heading-bar rounded-2xl px-4 py-2 text-center font-black text-lg mb-4';
+            title.textContent = category.name;
+            const count = document.createElement('div');
+            count.className = 'text-center text-gray-500 font-black mb-3 text-sm';
+            count.textContent = 'Drop matching cards here';
+            const holder = document.createElement('div');
+            holder.className = 'flex flex-wrap justify-center gap-3';
+            holder.dataset.holder = 'true';
+            zone.appendChild(title); zone.appendChild(count); zone.appendChild(holder);
+            zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', function(){ zone.classList.remove('drag-over'); });
+            zone.addEventListener('drop', function(e){ e.preventDefault(); zone.classList.remove('drag-over'); if (draggedCard) attemptPlacement(draggedCard, zone); });
+            zone.addEventListener('click', function(){ if (selectedCard) attemptPlacement(selectedCard, zone); });
+            return zone;
+        }
+        function clearSelected() { if (selectedCard) selectedCard.classList.remove('selected'); selectedCard = null; }
+        function attemptPlacement(cardEl, zoneEl) {
+            if (cardEl.classList.contains('locked')) return;
+            startTimer();
+            if (cardEl.dataset.categoryId === zoneEl.dataset.categoryId) {
+                const holder = zoneEl.querySelector('[data-holder="true"]');
+                cardEl.classList.remove('selected');
+                cardEl.classList.add('locked');
+                cardEl.draggable = false;
+                holder.appendChild(cardEl);
+                score++;
+                beep('correct');
+                updateStats();
+                if (score === DATA.cards.length) finishGame();
+            } else {
+                mistakes++;
+                cardEl.classList.add('shake');
+                beep('wrong');
+                updateStats();
+                setTimeout(function(){ cardEl.classList.remove('shake'); }, 400);
+            }
+            clearSelected();
+        }
+        function finishGame() {
+            stopTimer();
+            const finalMs = elapsedMs + penaltyMs();
+            const currentBest = Number(sessionStorage.getItem(bestKey) || 0);
+            if (!currentBest || finalMs < currentBest) sessionStorage.setItem(bestKey, String(Math.round(finalMs)));
+            updateStats();
+            $('finalRaw').textContent = formatMs(elapsedMs);
+            $('finalMistakes').textContent = String(mistakes);
+            $('finalPenalty').textContent = '+' + formatMs(penaltyMs());
+            $('finalScore').textContent = formatMs(finalMs);
+            $('finalBest').textContent = formatMs(Number(sessionStorage.getItem(bestKey)));
+            $('winModal').classList.remove('hidden'); $('winModal').classList.add('flex');
+            beep('win');
+        }
+        function init() {
+            document.documentElement.style.setProperty('--bg', settings.backgroundColour);
+            document.documentElement.style.setProperty('--heading', settings.headingSectionColour);
+            document.documentElement.style.setProperty('--headingText', settings.headingTextColour);
+            $('gameTitle').textContent = settings.gameTitle;
+            $('instructionText').textContent = settings.instructionText;
+            $('categoryHeading').textContent = settings.categoryName;
+            setSoundButton();
+            $('soundToggle').addEventListener('click', function(){ soundOn = !soundOn; setSoundButton(); beep('correct'); });
+            categories.forEach(function(category){ $('categoriesGrid').appendChild(createCategory(category)); });
+            cards.forEach(function(card){ $('cardBank').appendChild(createCard(card)); });
+            updateStats();
+        }
+        document.addEventListener('DOMContentLoaded', init);
+    <\/script>
+</body>
+</html>`;
+        }
+        async function generateCode() {
+            const data = collectAllData();
+            const problems = validateData(data);
+            if (problems.length) {
+                showToast('Please fix the highlighted issues');
+                $('generatedCode').value = 'Please fix these issues before generating:\n\n' + problems.join('\n');
+                return '';
+            }
+            const html = generateStandaloneGame(data);
+            $('generatedCode').value = html;
+            showToast('Game code generated');
+            return html;
+        }
+        async function copyCode() {
+            const text = $('generatedCode').value || await generateCode();
+            if (!text) return;
+            try { await navigator.clipboard.writeText(text); showToast('Copied to clipboard'); }
+            catch (e) { $('generatedCode').focus(); $('generatedCode').select(); document.execCommand('copy'); showToast('Copied to clipboard'); }
+        }
+        async function downloadGame() {
+            const text = $('generatedCode').value || await generateCode();
+            if (!text) return;
+            const name = getSetting('categoryName', 'category-sort').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'category-sort';
+            const blob = new Blob([text], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name + '-category-sort-game.html';
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            showToast('Downloaded HTML');
+        }
+        function initBuilder() {
+            populateSelects();
+            renderCategories();
+            renderCards();
+            activateClickToClearPlaceholders();
+            $('categoryCount').addEventListener('change', resizeCategories);
+            $('cardCount').addEventListener('change', resizeCards);
+            $('refreshCategories').addEventListener('click', resizeCategories);
+            $('refreshCards').addEventListener('click', resizeCards);
+            $('generateCode').addEventListener('click', generateCode);
+            $('copyCode').addEventListener('click', copyCode);
+            $('downloadGame').addEventListener('click', downloadGame);
+        }
+        document.addEventListener('DOMContentLoaded', initBuilder);
+    </script>
+</body>
+</html>
