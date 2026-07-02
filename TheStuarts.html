@@ -111,6 +111,29 @@
             opacity: 0.92;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .header-action-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .sound-toggle-button {
+            background-color: #ffffff !important;
+            color: var(--theme-heading-dark) !important;
+            border: 3px solid var(--theme-soft-border) !important;
+        }
+
+        .sound-toggle-button.sound-off {
+            opacity: 0.82;
+        }
+
         .header-restart-button {
             flex-shrink: 0;
             white-space: nowrap;
@@ -133,6 +156,13 @@
                 gap: 10px;
             }
 
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-action-button,
             .header-restart-button {
                 width: 100%;
             }
@@ -373,9 +403,14 @@
                     <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
                     <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
                 </div>
-                <button id="start-again-button" onclick="location.reload()" class="restart-button header-restart-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-lg shadow-lg transition-transform hover:scale-105 active:scale-95">
-                    Start Again
-                </button>
+                <div class="header-actions">
+                    <button id="sound-toggle-button" onclick="toggleSoundEffects()" class="sound-toggle-button header-action-button font-bold py-3 px-5 rounded-2xl text-lg shadow-md transition-transform hover:scale-105 active:scale-95" aria-pressed="false">
+                        🔇 Sound Off
+                    </button>
+                    <button id="start-again-button" onclick="location.reload()" class="restart-button header-restart-button header-action-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-lg shadow-lg transition-transform hover:scale-105 active:scale-95">
+                        Start Again
+                    </button>
+                </div>
             </div>
 
             <div class="header-stats-grid" aria-label="Game progress and scoring">
@@ -511,6 +546,7 @@
          * Hard = dates hidden until the end
          *
          * The Start Again button reloads the game but keeps the best score in this browser tab/window.
+         * soundEffectsOnByDefault controls whether sound starts on or off. Players can still toggle it in the header.
          */
         const teacherSettings = {
             cardsToUse: 9,
@@ -527,6 +563,10 @@
             // Accuracy scoring
             // Each wrong placement adds this many seconds to the final score time.
             wrongPlacementPenaltySeconds: 5,
+
+            // Optional sound effects
+            // false = starts muted, true = starts with sound on. Players can toggle this in the header.
+            soundEffectsOnByDefault: false,
 
             // Wording shown around the game
             gameTitle: "Timeline Challenge! ⏳",
@@ -591,6 +631,8 @@
         let bestTimeMs = null;
         let wrongPlacements = 0;
         let selectedDifficulty = null;
+        let soundEnabled = false;
+        let audioContext = null;
 
         const difficultyOptions = {
             easy: {
@@ -688,6 +730,96 @@
 
         function clamp(min, value, max) {
             return Math.max(min, Math.min(value, max));
+        }
+
+        function getSoundEffectsOnByDefault() {
+            return teacherSettings.soundEffectsOnByDefault === true;
+        }
+
+        function updateSoundToggleDisplay() {
+            const soundButton = document.getElementById('sound-toggle-button');
+            if (!soundButton) return;
+
+            soundButton.innerText = soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+            soundButton.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+            soundButton.classList.toggle('sound-off', !soundEnabled);
+        }
+
+        function toggleSoundEffects() {
+            soundEnabled = !soundEnabled;
+            updateSoundToggleDisplay();
+
+            if (soundEnabled) {
+                playSoundEffect('toggle');
+            }
+        }
+
+        function getAudioContext() {
+            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextConstructor) return null;
+
+            if (!audioContext) {
+                audioContext = new AudioContextConstructor();
+            }
+
+            return audioContext;
+        }
+
+        function playTone(context, frequency, startTime, duration, type = 'sine', volume = 0.08) {
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+
+            gain.gain.setValueAtTime(0.0001, startTime);
+            gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration + 0.03);
+        }
+
+        async function playSoundEffect(soundType) {
+            if (!soundEnabled) return;
+
+            const context = getAudioContext();
+            if (!context) return;
+
+            try {
+                if (context.state === 'suspended') {
+                    await context.resume();
+                }
+            } catch (error) {
+                return;
+            }
+
+            const now = context.currentTime;
+
+            if (soundType === 'correct') {
+                playTone(context, 660, now, 0.10, 'sine', 0.07);
+                playTone(context, 880, now + 0.08, 0.12, 'sine', 0.07);
+                return;
+            }
+
+            if (soundType === 'wrong') {
+                playTone(context, 190, now, 0.18, 'sawtooth', 0.06);
+                playTone(context, 130, now + 0.12, 0.18, 'sawtooth', 0.05);
+                return;
+            }
+
+            if (soundType === 'win') {
+                playTone(context, 523.25, now, 0.12, 'sine', 0.07);
+                playTone(context, 659.25, now + 0.11, 0.12, 'sine', 0.07);
+                playTone(context, 783.99, now + 0.22, 0.14, 'sine', 0.07);
+                playTone(context, 1046.50, now + 0.36, 0.20, 'sine', 0.07);
+                return;
+            }
+
+            // Toggle sound
+            playTone(context, 740, now, 0.10, 'sine', 0.06);
         }
 
         function getDifficultyLabel() {
@@ -967,6 +1099,8 @@
 
         function initGame() {
             applyTeacherSettings();
+            soundEnabled = getSoundEffectsOnByDefault();
+            updateSoundToggleDisplay();
             bestTimeMs = null;
             updateTimerDisplay(0);
             updateMistakeDisplay();
@@ -1088,12 +1222,16 @@
                 if (score === gameData.length) {
                     if (selectedDifficulty === 'hard') revealAllDatesAtEnd();
                     stopGameTimer();
+                    playSoundEffect('win');
                     document.getElementById('win-modal').classList.remove('hidden');
                     document.getElementById('win-content').classList.add('scale-100');
                     fireConfetti();
+                } else {
+                    playSoundEffect('correct');
                 }
             } else {
                 recordWrongPlacement();
+                playSoundEffect('wrong');
                 card.classList.add('animate-shake', 'border-red-500');
                 setTimeout(() => card.classList.remove('animate-shake', 'border-red-500'), 400);
             }
