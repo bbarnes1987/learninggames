@@ -727,7 +727,7 @@
             const duplicateTracker = {};
             const lines = cards.map((card, index) => {
                 const sortYear = parseSortYear(card.year, index, duplicateTracker);
-                const imageLink = normaliseImageLink(card.image);
+                const imageLink = uploadedImages.get(index) || normaliseImageLink(card.imageLink);
                 return `            { sortYear: ${sortYear}, displayDate: ${jsString(card.year)}, text: ${jsString(card.text)}, image: ${jsString(imageLink)}, emoji: "📜" }`;
             });
 
