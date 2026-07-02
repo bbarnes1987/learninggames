@@ -316,14 +316,45 @@
                 .replace(/\b\w/g, letter => letter.toUpperCase());
         }
 
+        function cleanQuizFilePath(fileName) {
+            const raw = String(fileName || '').trim().replace(/\\/g, '/');
+            if (!raw) return '';
+            const withoutQuery = raw.split('#')[0].split('?')[0];
+            let pathOnly = withoutQuery;
+            try {
+                pathOnly = new URL(withoutQuery, window.location.href).pathname;
+            } catch (error) {}
+            pathOnly = pathOnly.replace(/^\/+/, '').replace(/^\.\//, '').replace(/^quizzes\//i, '');
+            const parts = pathOnly.split('/').filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : pathOnly;
+        }
+
         function safeRelativeQuizHref(fileName) {
-            return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(fileName)}`;
+            const cleanFile = cleanQuizFilePath(fileName);
+            return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(cleanFile)}`;
         }
 
         function normaliseManifestEntries(manifest) {
             if (Array.isArray(manifest)) return manifest;
             if (manifest && Array.isArray(manifest.quizzes)) return manifest.quizzes;
+            if (manifest && Array.isArray(manifest.items)) return manifest.items;
+            if (manifest && Array.isArray(manifest.games)) return manifest.games;
             return [];
+        }
+
+        function quizFromManifestEntry(entry) {
+            if (!entry) return null;
+            if (typeof entry === 'string') {
+                const file = cleanQuizFilePath(entry);
+                if (!file || !/\.html?$/i.test(file)) return null;
+                return { file, title: tidyTitleFromFilename(file), type: '', href: safeRelativeQuizHref(file) };
+            }
+            const rawFile = entry.file || entry.filename || entry.fileName || entry.path || entry.href || entry.url || entry.src || '';
+            const file = cleanQuizFilePath(rawFile);
+            if (!file || !/\.html?$/i.test(file)) return null;
+            const title = String(entry.title || entry.name || entry.label || tidyTitleFromFilename(file)).trim() || tidyTitleFromFilename(file);
+            const type = String(entry.type || entry.gameType || '').trim();
+            return { ...entry, file, title, type, href: safeRelativeQuizHref(file) };
         }
 
         function iconForQuiz(quiz) {
@@ -337,7 +368,8 @@
 
         function renderQuizzes(quizzes, sourceText) {
             const validQuizzes = quizzes
-                .filter(quiz => quiz && quiz.file && quiz.title)
+                .map(quizFromManifestEntry)
+                .filter(Boolean)
                 .sort((a, b) => a.title.localeCompare(b.title));
 
             const signature = JSON.stringify(validQuizzes.map(quiz => [quiz.file, quiz.title]));
@@ -372,15 +404,7 @@
                 if (!response.ok) throw new Error(`Could not load ${MANIFEST_PATH}.`);
                 const manifest = await response.json();
                 const entries = normaliseManifestEntries(manifest);
-                const quizzes = [];
-
-                for (const entry of entries) {
-                    const file = typeof entry === 'string' ? entry : entry.file;
-                    if (!file || !/\.html?$/i.test(file)) continue;
-                    const title = typeof entry === 'object' && entry.title ? entry.title : tidyTitleFromFilename(file);
-                    const type = typeof entry === 'object' && entry.type ? entry.type : '';
-                    quizzes.push({ file, title, type });
-                }
+                const quizzes = entries.map(quizFromManifestEntry).filter(Boolean);
 
                 renderQuizzes(quizzes, 'the quiz list');
                 return true;
@@ -389,11 +413,15 @@
             }
         }
 
-        loadFromHostedManifest().then(loaded => {
+        async function refreshHostedManifest() {
+            const loaded = await loadFromHostedManifest();
             if (!loaded) {
                 setStatus('Could not load the quiz list. Ask your teacher to check that quiz-list.json has been uploaded to the website root folder.', 'warning');
             }
-        });
+        }
+
+        refreshHostedManifest();
+        setInterval(refreshHostedManifest, 10000);
     </script>
 
 
