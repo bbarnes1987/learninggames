@@ -256,7 +256,7 @@
                 <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
                 <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
             </div>
-            <div class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3">
                 <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
                     Score: <span id="score-display">0</span> / <span id="total-display">0</span>
                 </div>
@@ -267,6 +267,9 @@
                 <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
                     Mistakes: <span id="mistake-display">0</span>
                     <span class="block text-sm font-black mt-1">Penalty: +<span id="penalty-display">0:00.0</span></span>
+                </div>
+                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
+                    Difficulty: <span id="difficulty-display">Choose</span>
                 </div>
             </div>
         </div>
@@ -300,6 +303,32 @@
 
     </main>
 
+    <!-- Difficulty Selection Modal -->
+    <div id="difficulty-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[110] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-3xl w-full text-center shadow-2xl">
+            <div class="text-6xl mb-4">⏱️</div>
+            <h2 class="difficulty-title text-4xl font-black mb-2">Choose Your Difficulty</h2>
+            <p class="text-lg text-gray-600 mb-6">Pick how much date help players should receive during the timeline challenge.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="selectDifficulty('easy')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🟢</span>
+                    <span class="block text-2xl font-black text-gray-800">Easy</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates are visible from the start.</span>
+                </button>
+                <button onclick="selectDifficulty('normal')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🟡</span>
+                    <span class="block text-2xl font-black text-gray-800">Normal</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates appear after each correct placement.</span>
+                </button>
+                <button onclick="selectDifficulty('hard')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🔴</span>
+                    <span class="block text-2xl font-black text-gray-800">Hard</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates stay hidden until the end.</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Win Modal -->
     <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-8 max-w-md text-center transform scale-90 transition-transform duration-300 shadow-2xl" id="win-content">
@@ -307,13 +336,17 @@
             <h2 id="win-title" class="win-title text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
             <p id="win-message" class="text-xl text-gray-600 mb-4">You have perfectly ordered the timeline of The Stuarts.</p>
             <div id="final-time-summary" class="hidden bg-gray-100 rounded-2xl p-4 mb-6 text-gray-700 text-left">
-                <p class="text-base font-bold">Raw time: <span id="final-raw-time">0:00.0</span></p>
+                <p class="text-base font-bold">Difficulty: <span id="final-difficulty">Normal</span></p>
+                <p class="text-base font-bold mt-1">Raw time: <span id="final-raw-time">0:00.0</span></p>
                 <p class="text-base font-bold mt-1">Mistakes: <span id="final-mistakes">0</span> × <span id="final-penalty-each">5s</span></p>
                 <p class="text-base font-bold mt-1">Accuracy penalty: +<span id="final-penalty">0:00.0</span></p>
                 <p class="text-xl font-black mt-3 text-center">Final score time: <span id="final-adjusted-time">0:00.0</span></p>
                 <p class="text-base font-bold mt-2 text-center">Best score: <span id="final-best-time">—</span></p>
                 <p id="new-best-message" class="hidden text-sm font-black mt-2 text-center">New best score!</p>
             </div>
+            <button id="view-timeline-button" onclick="closeWinModal()" class="view-timeline-button bg-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full mb-3 border-4">
+                View Completed Timeline
+            </button>
             <button id="play-again-button" onclick="location.reload()" class="play-again-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
                 Play Again
             </button>
@@ -342,6 +375,11 @@
          *
          * wrongPlacementPenaltySeconds controls the accuracy penalty.
          * Example: 5 means every incorrect drop adds 5 seconds to the final score time.
+         *
+         * Players choose their difficulty when the page opens:
+         * Easy = dates visible from the start
+         * Normal = dates visible after correct placement
+         * Hard = dates hidden until the end
          */
         const teacherSettings = {
             cardsToUse: 9,
@@ -421,6 +459,22 @@
         let timerIntervalId = null;
         let bestTimeMs = null;
         let wrongPlacements = 0;
+        let selectedDifficulty = null;
+
+        const difficultyOptions = {
+            easy: {
+                label: 'Easy',
+                description: 'Dates visible from the start'
+            },
+            normal: {
+                label: 'Normal',
+                description: 'Dates visible after correct placement'
+            },
+            hard: {
+                label: 'Hard',
+                description: 'Dates hidden until the end'
+            }
+        };
 
         function textWithCategory(text) {
             return String(text).replace(/\{category\}/g, teacherSettings.categoryName);
@@ -489,13 +543,76 @@
             document.getElementById('win-title').innerText = 'Incredible!';
             document.getElementById('win-message').innerText = `You have perfectly ordered the timeline of ${teacherSettings.categoryName}.`;
             document.getElementById('play-again-button').innerText = 'Play Again';
+            document.getElementById('view-timeline-button').innerText = 'View Completed Timeline';
 
             const newBestMessage = document.getElementById('new-best-message');
             if (newBestMessage) newBestMessage.style.color = headingDark;
+
+            const viewTimelineButton = document.getElementById('view-timeline-button');
+            if (viewTimelineButton) {
+                viewTimelineButton.style.borderColor = headingColour;
+                viewTimelineButton.style.color = headingDark;
+            }
         }
 
         function clamp(min, value, max) {
             return Math.max(min, Math.min(value, max));
+        }
+
+        function getDifficultyLabel() {
+            return selectedDifficulty && difficultyOptions[selectedDifficulty]
+                ? difficultyOptions[selectedDifficulty].label
+                : 'Choose';
+        }
+
+        function updateDifficultyDisplay() {
+            const difficultyDisplay = document.getElementById('difficulty-display');
+            if (difficultyDisplay) difficultyDisplay.innerText = getDifficultyLabel();
+        }
+
+        function selectDifficulty(level) {
+            selectedDifficulty = difficultyOptions[level] ? level : 'normal';
+            updateDifficultyDisplay();
+            applyDifficultyModeToCards();
+            loadBestTime();
+
+            const difficultyModal = document.getElementById('difficulty-modal');
+            if (difficultyModal) difficultyModal.classList.add('hidden');
+
+            requestAnimationFrame(fitCardText);
+        }
+
+        function shouldDateBeVisibleBeforePlacement() {
+            return selectedDifficulty === 'easy';
+        }
+
+        function shouldRevealDateAfterCorrectPlacement() {
+            return selectedDifficulty === 'easy' || selectedDifficulty === 'normal';
+        }
+
+        function applyDifficultyModeToCards() {
+            const dateElements = document.querySelectorAll('.event-date');
+            dateElements.forEach(dateElement => {
+                if (shouldDateBeVisibleBeforePlacement()) {
+                    dateElement.classList.remove('hidden');
+                } else {
+                    dateElement.classList.add('hidden');
+                }
+            });
+        }
+
+        function revealAllDatesAtEnd() {
+            const dateElements = document.querySelectorAll('.event-date');
+            dateElements.forEach(dateElement => {
+                dateElement.classList.remove('hidden');
+                dateElement.classList.add('animate-date');
+            });
+            requestAnimationFrame(fitCardText);
+        }
+
+        function closeWinModal() {
+            const winModal = document.getElementById('win-modal');
+            if (winModal) winModal.classList.add('hidden');
         }
 
         function getWrongPlacementPenaltySeconds() {
@@ -529,7 +646,8 @@
             // sessionStorage keeps this in the current browser tab/window, including after pressing Play Again.
             // Closing the tab/window clears it.
             // The best score is based on final score time: raw time + accuracy penalties.
-            return `timeline-game-best-score:${teacherSettings.categoryName}:${gameData.length}:${getWrongPlacementPenaltySeconds()}s`;
+            const difficultyKey = selectedDifficulty || 'not-selected';
+            return `timeline-game-best-score:${teacherSettings.categoryName}:${gameData.length}:${difficultyKey}:${getWrongPlacementPenaltySeconds()}s`;
         }
 
         function getStoredBestTime() {
@@ -582,7 +700,7 @@
         }
 
         function startGameTimer() {
-            if (timerStarted || timerFinished) return;
+            if (!selectedDifficulty || timerStarted || timerFinished) return;
 
             timerStarted = true;
             timerStartMs = performance.now();
@@ -618,6 +736,7 @@
 
         function showFinalTime(rawTimeMs, penaltyMs, adjustedTimeMs, isNewBestTime) {
             const finalSummary = document.getElementById('final-time-summary');
+            const finalDifficulty = document.getElementById('final-difficulty');
             const finalRawTime = document.getElementById('final-raw-time');
             const finalMistakes = document.getElementById('final-mistakes');
             const finalPenaltyEach = document.getElementById('final-penalty-each');
@@ -625,6 +744,7 @@
             const finalAdjustedTime = document.getElementById('final-adjusted-time');
             const newBestMessage = document.getElementById('new-best-message');
 
+            if (finalDifficulty) finalDifficulty.innerText = getDifficultyLabel();
             if (finalRawTime) finalRawTime.innerText = formatTime(rawTimeMs);
             if (finalMistakes) finalMistakes.innerText = wrongPlacements;
             if (finalPenaltyEach) finalPenaltyEach.innerText = formatPenaltySecondsText(getWrongPlacementPenaltySeconds());
@@ -716,7 +836,11 @@
 
         function initGame() {
             applyTeacherSettings();
-            loadBestTime();
+            bestTimeMs = null;
+            updateTimerDisplay(0);
+            updateMistakeDisplay();
+            updateBestTimeDisplay();
+            updateDifficultyDisplay();
             document.getElementById('total-display').innerText = gameData.length;
             eventsWithIds = gameData.map((item, index) => ({ ...item, id: `event-${index}` }));
 
@@ -821,12 +945,17 @@
                 slot.classList.add('occupied', 'bg-transparent', 'border-0');
                 card.draggable = false;
                 card.classList.add('locked-in-timeline', 'border-emerald-500', 'cursor-default');
-                card.querySelector('.event-date').classList.remove('hidden');
+                const dateElement = card.querySelector('.event-date');
+                if (dateElement && shouldRevealDateAfterCorrectPlacement()) {
+                    dateElement.classList.remove('hidden');
+                    dateElement.classList.add('animate-date');
+                }
                 slot.appendChild(card);
                 requestAnimationFrame(fitCardText);
                 score++;
                 document.getElementById('score-display').innerText = score;
                 if (score === gameData.length) {
+                    if (selectedDifficulty === 'hard') revealAllDatesAtEnd();
                     stopGameTimer();
                     document.getElementById('win-modal').classList.remove('hidden');
                     document.getElementById('win-content').classList.add('scale-100');
