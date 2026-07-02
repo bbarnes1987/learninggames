@@ -407,7 +407,7 @@
 
             <section class="panel">
                 <h2 class="panel-title">3. Generate and copy the game code</h2>
-                <p class="panel-help">Click generate, then copy the full HTML code into your website embed area, download it as an HTML file, or add it directly into your existing quizzes folder.</p>
+                <p class="panel-help">Click generate, then copy the full HTML code, download it as an HTML file, or add it directly to your website. When adding to the website, choose the main website folder, not the quizzes folder.</p>
 
                 <div class="actions">
                     <button class="primary" id="generateButton" type="button">Generate game code</button>
@@ -950,6 +950,29 @@ ${lines.join(',\n')}
             $('statusText').innerText = `Downloaded ${getTimelineQuizFileName()}.`;
         }
 
+
+        async function folderContainsFile(folderHandle, fileName) {
+            try {
+                await folderHandle.getFileHandle(fileName);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function validateWebsiteRootFolder(folderHandle) {
+            const selectedName = String(folderHandle && folderHandle.name ? folderHandle.name : '').toLowerCase();
+
+            if (selectedName === 'quizzes') {
+                throw new Error('You selected the quizzes folder. Please select the main website folder instead — the one that contains index.html.');
+            }
+
+            const hasIndex = await folderContainsFile(folderHandle, 'index.html');
+            if (!hasIndex) {
+                throw new Error('The selected folder does not contain index.html. Please select the main website folder, not the quizzes folder.');
+            }
+        }
+
         async function addToWebsite() {
             const text = $('outputCode').value || await generateGameCode();
             if (!text) return;
@@ -963,8 +986,10 @@ ${lines.join(',\n')}
             }
 
             try {
-                $('statusText').innerText = 'Choose your website root folder, not the quizzes folder...';
+                $('statusText').innerText = 'Choose the main website folder — the folder that contains index.html. Do not choose quizzes.';
                 const websiteRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+                await validateWebsiteRootFolder(websiteRootHandle);
 
                 const quizzesFolderHandle = await websiteRootHandle.getDirectoryHandle('quizzes', { create: true });
                 const fileHandle = await quizzesFolderHandle.getFileHandle(fileName, { create: true });
@@ -975,7 +1000,7 @@ ${lines.join(',\n')}
                 const manifestEntry = buildQuizManifestEntry(fileName, text);
                 await updateQuizManifest(websiteRootHandle, manifestEntry);
 
-                $('statusText').innerText = `Added quizzes/${fileName} and updated quiz-list.json in the website root folder.`;
+                $('statusText').innerText = `Added quizzes/${fileName} and updated quiz-list.json next to index.html.`;
             } catch (error) {
                 if (error && error.name === 'AbortError') {
                     $('statusText').innerText = 'Add to website cancelled.';
@@ -983,8 +1008,9 @@ ${lines.join(',\n')}
                 }
 
                 console.error(error);
-                downloadTextFile(text, fileName);
-                $('statusText').innerText = `Could not write directly to the website folder. Downloaded ${fileName}; move it into quizzes and update quiz-list.json in the root website folder.`;
+                const message = error && error.message ? error.message : 'Could not write directly to the website folder.';
+                $('statusText').innerText = message;
+                alert(message);
             }
         }
 
