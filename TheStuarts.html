@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Timeline Game</title>
+    
+    <!-- Tailwind CSS for layout and styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Pacifico&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; 
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .font-cursive {
+            font-family: 'Pacifico', cursive;
+        }
+
+
+
+        /* Dynamic timeline/card sizing
+           These variables are changed by JS depending on how many cards are in gameData. */
+        :root {
+            --tl-card-w: 130px;
+            --tl-card-h: 200px;
+            --tl-gap: 16px;
+            --tl-img-size: 80px;
+            --tl-icon-size: 24px;
+            --tl-text-size: 11px;
+            --tl-date-size: 14px;
+            --tl-category-size: 11px;
+            --tl-placeholder-size: 14px;
+            --tl-card-pad: 6px;
+        }
+
+        #timeline-slots,
+        #card-bank {
+            gap: var(--tl-gap) !important;
+        }
+
+        #timeline-slots {
+            justify-content: center;
+            overflow-x: auto;
+        }
+
+        .timeline-slot,
+        .draggable-card {
+            width: var(--tl-card-w) !important;
+            min-width: var(--tl-card-w) !important;
+            height: var(--tl-card-h) !important;
+            flex: 0 0 var(--tl-card-w) !important;
+        }
+
+        .draggable-card {
+            padding: var(--tl-card-pad) !important;
+        }
+
+        .slot-placeholder {
+            font-size: var(--tl-placeholder-size) !important;
+            line-height: 1.15 !important;
+        }
+
+        .slot-position-label {
+            font-size: calc(var(--tl-placeholder-size) * 0.72) !important;
+        }
+
+        .card-icon {
+            width: var(--tl-icon-size) !important;
+            height: var(--tl-icon-size) !important;
+        }
+
+        .card-icon svg {
+            width: calc(var(--tl-icon-size) * 0.5) !important;
+            height: calc(var(--tl-icon-size) * 0.5) !important;
+        }
+
+        .category-text {
+            font-size: var(--tl-category-size) !important;
+        }
+
+        .event-date {
+            font-size: var(--tl-date-size) !important;
+            line-height: 1.05 !important;
+        }
+
+        .portrait-frame {
+            width: var(--tl-img-size) !important;
+            height: var(--tl-img-size) !important;
+        }
+
+        .event-text {
+            font-size: var(--tl-text-size) !important;
+            line-height: 1.05 !important;
+        }
+
+        /* Custom Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-2deg); }
+            40% { transform: translateX(8px) rotate(2deg); }
+            60% { transform: translateX(-8px) rotate(-2deg); }
+            80% { transform: translateX(8px) rotate(2deg); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes revealDate {
+            0% { transform: translateY(-10px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-date {
+            animation: revealDate 0.4s ease-out forwards;
+        }
+
+        /* Hide scrollbar */
+        .hide-scrollbar::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Game Header -->
+    <header class="bg-white shadow-md p-4 sticky top-0 z-50 border-b-4 border-emerald-500">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
+                <p class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
+            </div>
+            <div class="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
+                Score: <span id="score-display">0</span> / <span id="total-display">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 flex flex-col gap-6 mt-4">
+        
+        <!-- Timeline Section -->
+        <section class="w-full bg-white rounded-3xl p-6 shadow-xl border-4 border-gray-100 relative overflow-hidden">
+            <h2 class="text-xl font-bold mb-4 text-center bg-gray-100 py-1 rounded-xl text-gray-700 uppercase tracking-widest">Chronological Order</h2>
+            
+            <div class="absolute left-0 right-0 top-[60%] h-2 bg-gray-200 rounded-full z-0 hidden sm:block"></div>
+
+            <div id="timeline-slots" class="flex flex-row overflow-x-auto gap-4 relative z-10 pb-4 pt-1 hide-scrollbar snap-x items-center px-2">
+                <!-- Slots injected by JS -->
+            </div>
+        </section>
+
+        <!-- Card Bank -->
+        <section class="w-full">
+            <div class="bg-emerald-600 rounded-t-3xl p-3 text-center">
+                <h2 class="text-xl font-bold text-white uppercase tracking-widest tracking-widest">Historical Events</h2>
+            </div>
+            <div class="bg-emerald-50 rounded-b-3xl p-6 shadow-xl border-4 border-t-0 border-emerald-600 min-h-[300px]">
+                <div id="card-bank" class="flex flex-wrap justify-center gap-4">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 max-w-md text-center transform scale-90 transition-transform duration-300 shadow-2xl" id="win-content">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 class="text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
+            <p class="text-xl text-gray-600 mb-8">You have perfectly ordered the timeline of The Stuarts.</p>
+            <button onclick="location.reload()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ==========================================
+         * 📝 TEACHER CONFIGURATION AREA 📝
+         * ==========================================
+         * Using the Google Drive Thumbnail service for maximum compatibility.
+         */
+        const gameData = [
+            { sortYear: 1603, displayDate: "1603", text: "James I becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=167CzaPg6Z_S1UbBE6R4DvQw9jBq6O_YC&sz=w220" },
+            { sortYear: 1604, displayDate: "1604", text: "Gunpowder Plot. Guy Fawkes attempts to kill James I.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1Uin2vza8qPurYXI5wFPM9iQq9slD1R3E&sz=w220" },
+            { sortYear: 1625, displayDate: "1625", text: "Charles I becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1DRo1U3rdf7_ie7-4CvY_ZQodoDC7GiQM&sz=w220" },
+            { sortYear: 1649, displayDate: "1649", text: "Oliver Cromwell becomes 'Lord Protector'.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1EU31ds2sI6mxH2DOArD0vIdr42RPGHAa&sz=w220" },
+            { sortYear: 1660.1, displayDate: "1660", text: "Charles II becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1Ji2t9BA-0itPQp8xibiylNWUflcoY67T&sz=w220" },
+            { sortYear: 1660.2, displayDate: "1660", text: "Samuel Pepys starts his diary.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1S-9PhvHPz0qg0V2L9Bvqk98cvZXV443A&sz=w220" },
+            { sortYear: 1664, displayDate: "1664 - 1665", text: "The Plague arrives in London.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=11FNqRXDX7MvG6VDkFMv2NVLHUoRdWdEb&sz=w220" },
+            { sortYear: 1666, displayDate: "1666", text: "The Great Fire of London.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1ub2WkGKA6uK5ADPKz9wN2esf_jAc4usN&sz=w220" },
+            { sortYear: 1688, displayDate: "1688", text: "The Glorious Revolution.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220" }
+            
+        ];
+
+        let eventsWithIds = [];
+        let score = 0;
+        let draggedCard = null;
+        let touchSelectedCard = null;
+
+
+
+        function clamp(min, value, max) {
+            return Math.max(min, Math.min(value, max));
+        }
+
+        function updateTimelineTileSizing() {
+            const timelineContainer = document.getElementById('timeline-slots');
+            if (!timelineContainer) return;
+
+            const count = gameData.length;
+            if (count === 0) return;
+
+            // 130 x 200 is your original card size. The script only shrinks when needed.
+            const originalWidth = 130;
+            const originalHeight = 200;
+            const minWidth = 66; // Keeps large timelines usable without changing the outer timeline width.
+
+            // Reduce the gap slightly as the number of cards increases.
+            const gap = count <= 8 ? 16 : clamp(6, 16 - ((count - 8) * 1.5), 16);
+
+            // Work out the biggest card width that allows all positions to fit inside the existing space.
+            const availableWidth = timelineContainer.clientWidth - (gap * (count - 1));
+            const width = clamp(minWidth, Math.floor(availableWidth / count), originalWidth);
+            const scale = width / originalWidth;
+            const height = Math.round(originalHeight * scale);
+
+            document.documentElement.style.setProperty('--tl-card-w', `${width}px`);
+            document.documentElement.style.setProperty('--tl-card-h', `${height}px`);
+            document.documentElement.style.setProperty('--tl-gap', `${gap}px`);
+            document.documentElement.style.setProperty('--tl-img-size', `${clamp(38, Math.round(80 * scale), 80)}px`);
+            document.documentElement.style.setProperty('--tl-icon-size', `${clamp(16, Math.round(24 * scale), 24)}px`);
+            document.documentElement.style.setProperty('--tl-text-size', `${clamp(7.5, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-date-size', `${clamp(9, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-category-size', `${clamp(7.5, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-placeholder-size', `${clamp(9, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-card-pad', `${clamp(3, Math.round(6 * scale), 6)}px`);
+        }
+
+        function initGame() {
+            document.getElementById('total-display').innerText = gameData.length;
+            eventsWithIds = gameData.map((item, index) => ({ ...item, id: `event-${index}` }));
+
+            const sortedEvents = [...eventsWithIds].sort((a, b) => a.sortYear - b.sortYear);
+            const timelineContainer = document.getElementById('timeline-slots');
+            
+            sortedEvents.forEach((ev, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'timeline-slot relative bg-gray-50 border-[3px] border-dashed border-gray-300 rounded-xl flex-shrink-0 snap-center flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-emerald-50';
+                slot.setAttribute('data-target-id', ev.id);
+                slot.innerHTML = `<div class="slot-placeholder text-gray-400 font-bold pointer-events-none px-1 text-center"><span class="slot-position-label block uppercase mb-1">Position ${index + 1}</span>Drop Here</div>`;
+                timelineContainer.appendChild(slot);
+            });
+
+            updateTimelineTileSizing();
+
+            const shuffledEvents = [...eventsWithIds].sort(() => Math.random() - 0.5);
+            const bankContainer = document.getElementById('card-bank');
+            
+            shuffledEvents.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = 'draggable-card bg-white border-[3px] border-gray-600 rounded-xl cursor-grab text-center shadow-md transition-all hover:scale-105 active:scale-95 animate-pop flex flex-col items-center justify-between flex-shrink-0';
+                card.draggable = true;
+                card.setAttribute('data-id', ev.id);
+
+                card.innerHTML = `
+                    <div class="flex w-full items-center justify-start gap-1 mb-1.5 pointer-events-none">
+                        <div class="card-icon rounded-full border-2 border-gray-600 flex items-center justify-center bg-gray-600 text-white shadow-inner flex-shrink-0">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-10 9h3v11h14v-11h3l-10-9zm0 4.5c1.5 2 3 4 3 6.5 0 2.5-1.5 4-3 5.5-1.5-1.5-3-3-3-5.5 0-2.5 1.5-4.5 3-6.5z"/></svg>
+                        </div>
+                        <span class="category-text font-cursive text-gray-700 leading-tight text-left">${ev.category}</span>
+                    </div>
+                    
+                    <div class="event-date hidden bg-emerald-600 text-white font-black px-2 py-0.5 rounded mb-1.5 shadow w-full">${ev.displayDate}</div>
+                    
+                    <!-- Portrait Frame: Increased scale to 1.6 to crop out white borders -->
+                    <div class="portrait-frame rounded-full border-[3px] border-gray-600 mb-1.5 shadow-sm bg-white flex-shrink-0 flex items-center justify-center overflow-hidden relative">
+                        <img src="${ev.image}" 
+                             class="w-full h-full object-cover relative z-10 scale-[1.6]" 
+                             loading="lazy"
+                             onerror="this.parentElement.innerHTML='<div class=\\'text-[10px] p-1 font-bold text-gray-300 uppercase leading-tight\\'>Blocked</div>'">
+                    </div>
+                    
+                    <p class="event-text font-bold text-gray-800 flex-grow flex items-center justify-center overflow-hidden">${ev.text}</p>
+                `;
+                
+                bankContainer.appendChild(card);
+            });
+
+            setupInteractions();
+        }
+
+        function setupInteractions() {
+            const cards = document.querySelectorAll('.draggable-card');
+            const slots = document.querySelectorAll('.timeline-slot');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    draggedCard = card;
+                    if (e.dataTransfer) e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+                    card.classList.add('opacity-50');
+                    clearTouchSelection(cards);
+                });
+                card.addEventListener('dragend', () => { card.classList.remove('opacity-50'); draggedCard = null; });
+                card.addEventListener('click', () => {
+                    if (card.classList.contains('locked-in-timeline')) return;
+                    if (touchSelectedCard === card) { clearTouchSelection(cards); } 
+                    else { clearTouchSelection(cards); touchSelectedCard = card; card.classList.add('ring-8', 'ring-blue-400'); }
+                });
+            });
+
+            slots.forEach(slot => {
+                slot.addEventListener('dragover', (e) => e.preventDefault());
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedCard) attemptPlacement(draggedCard, slot);
+                });
+                slot.addEventListener('click', () => {
+                    if (touchSelectedCard && !slot.classList.contains('occupied')) {
+                        attemptPlacement(touchSelectedCard, slot);
+                        clearTouchSelection(cards);
+                    }
+                });
+            });
+        }
+
+        function clearTouchSelection(cards) {
+            touchSelectedCard = null;
+            cards.forEach(c => c.classList.remove('ring-8', 'ring-blue-400'));
+        }
+
+        function attemptPlacement(card, slot) {
+            if (card.getAttribute('data-id') === slot.getAttribute('data-target-id')) {
+                slot.querySelector('.slot-placeholder').style.display = 'none';
+                slot.classList.add('occupied', 'bg-transparent', 'border-0');
+                card.draggable = false;
+                card.classList.add('locked-in-timeline', 'border-emerald-500', 'cursor-default');
+                card.querySelector('.event-date').classList.remove('hidden');
+                slot.appendChild(card);
+                score++;
+                document.getElementById('score-display').innerText = score;
+                if (score === gameData.length) {
+                    document.getElementById('win-modal').classList.remove('hidden');
+                    document.getElementById('win-content').classList.add('scale-100');
+                    fireConfetti();
+                }
+            } else {
+                card.classList.add('animate-shake', 'border-red-500');
+                setTimeout(() => card.classList.remove('animate-shake', 'border-red-500'), 400);
+            }
+        }
+
+        function fireConfetti() {
+            const colors = ['#34d399', '#fcd34d', '#f87171', '#60a5fa'];
+            for (let i = 0; i < 50; i++) {
+                const c = document.createElement('div');
+                c.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-20px;width:10px;height:10px;background:${colors[Math.floor(Math.random()*colors.length)]};z-index:200;pointer-events:none;`;
+                document.body.appendChild(c);
+                c.animate([{transform:'translateY(0) rotate(0deg)',opacity:1},{transform:`translateY(100vh) rotate(${Math.random()*360}deg)`,opacity:0}], {duration: 2000, fill:'forwards'});
+                setTimeout(()=>c.remove(), 2000);
+            }
+        }
+
+        window.addEventListener('resize', updateTimelineTileSizing);
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
