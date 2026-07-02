@@ -39,6 +39,10 @@
             --tl-category-size: 11px;
             --tl-placeholder-size: 14px;
             --tl-card-pad: 6px;
+            --tl-inner-gap: 6px;
+            --tl-date-pad-x: 8px;
+            --tl-border: 3px;
+            --tl-justify: center;
         }
 
         #timeline-slots,
@@ -47,8 +51,33 @@
         }
 
         #timeline-slots {
-            justify-content: center;
+            justify-content: var(--tl-justify, center);
             overflow-x: auto;
+            overflow-y: visible;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #timeline-slots.timeline-needs-scroll {
+            justify-content: flex-start !important;
+            cursor: grab;
+        }
+
+        #timeline-slots::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        #timeline-slots::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+
+        #timeline-slots::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+            border: 2px solid #f1f5f9;
         }
 
         .timeline-slot,
@@ -59,22 +88,36 @@
             flex: 0 0 var(--tl-card-w) !important;
         }
 
+        .timeline-slot:not(.occupied),
+        .draggable-card,
+        .portrait-frame {
+            border-width: var(--tl-border, 3px) !important;
+        }
+
         .draggable-card {
             padding: var(--tl-card-pad) !important;
+            min-height: var(--tl-card-h) !important;
         }
 
         .slot-placeholder {
             font-size: var(--tl-placeholder-size) !important;
             line-height: 1.15 !important;
+            overflow-wrap: break-word;
         }
 
         .slot-position-label {
             font-size: calc(var(--tl-placeholder-size) * 0.72) !important;
         }
 
+        .card-top-row {
+            margin-bottom: var(--tl-inner-gap) !important;
+            min-height: var(--tl-icon-size);
+        }
+
         .card-icon {
             width: var(--tl-icon-size) !important;
             height: var(--tl-icon-size) !important;
+            border-width: var(--tl-border, 3px) !important;
         }
 
         .card-icon svg {
@@ -84,21 +127,35 @@
 
         .category-text {
             font-size: var(--tl-category-size) !important;
+            line-height: 1.05 !important;
+            min-width: 0;
+            overflow-wrap: break-word;
         }
 
         .event-date {
             font-size: var(--tl-date-size) !important;
             line-height: 1.05 !important;
+            margin-bottom: var(--tl-inner-gap) !important;
+            padding-left: var(--tl-date-pad-x) !important;
+            padding-right: var(--tl-date-pad-x) !important;
+            white-space: normal;
         }
 
         .portrait-frame {
             width: var(--tl-img-size) !important;
             height: var(--tl-img-size) !important;
+            margin-bottom: var(--tl-inner-gap) !important;
         }
 
         .event-text {
             font-size: var(--tl-text-size) !important;
             line-height: 1.05 !important;
+            min-height: 0;
+            width: 100%;
+            overflow: visible !important;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            text-wrap: balance;
         }
 
         /* Custom Animations */
@@ -161,7 +218,7 @@
             
             <div class="absolute left-0 right-0 top-[60%] h-2 bg-gray-200 rounded-full z-0 hidden sm:block"></div>
 
-            <div id="timeline-slots" class="flex flex-row overflow-x-auto gap-4 relative z-10 pb-4 pt-1 hide-scrollbar snap-x items-center px-2">
+            <div id="timeline-slots" class="flex flex-row overflow-x-auto gap-4 relative z-10 pb-4 pt-1 snap-x items-center px-2">
                 <!-- Slots injected by JS -->
             </div>
         </section>
@@ -230,30 +287,74 @@
             const count = gameData.length;
             if (count === 0) return;
 
-            // 130 x 200 is your original card size. The script only shrinks when needed.
+            // Original card size. The cards shrink while they remain readable.
+            // Once they reach the minimum readable size, the timeline becomes horizontally scrollable.
             const originalWidth = 130;
             const originalHeight = 200;
-            const minWidth = 66; // Keeps large timelines usable without changing the outer timeline width.
+            const minReadableWidth = 92;
+            const minReadableHeight = 160;
 
-            // Reduce the gap slightly as the number of cards increases.
-            const gap = count <= 8 ? 16 : clamp(6, 16 - ((count - 8) * 1.5), 16);
-
-            // Work out the biggest card width that allows all positions to fit inside the existing space.
+            const gap = count <= 8 ? 16 : clamp(8, 16 - ((count - 8) * 1.25), 16);
             const availableWidth = timelineContainer.clientWidth - (gap * (count - 1));
-            const width = clamp(minWidth, Math.floor(availableWidth / count), originalWidth);
-            const scale = width / originalWidth;
-            const height = Math.round(originalHeight * scale);
 
+            let width = Math.floor(availableWidth / count);
+            width = clamp(minReadableWidth, width, originalWidth);
+
+            const scale = width / originalWidth;
+            let height = Math.round(originalHeight * scale);
+            height = clamp(minReadableHeight, height, originalHeight);
+
+            const totalTimelineWidth = (width * count) + (gap * (count - 1));
+            const needsScroll = totalTimelineWidth > timelineContainer.clientWidth + 1;
+
+            timelineContainer.classList.toggle('timeline-needs-scroll', needsScroll);
+
+            // When scrolling is not needed, keep the line of cards centred.
+            // When scrolling is needed, align from the left so the first card is fully reachable.
+            document.documentElement.style.setProperty('--tl-justify', needsScroll ? 'flex-start' : 'center');
             document.documentElement.style.setProperty('--tl-card-w', `${width}px`);
             document.documentElement.style.setProperty('--tl-card-h', `${height}px`);
             document.documentElement.style.setProperty('--tl-gap', `${gap}px`);
-            document.documentElement.style.setProperty('--tl-img-size', `${clamp(38, Math.round(80 * scale), 80)}px`);
+            document.documentElement.style.setProperty('--tl-img-size', `${clamp(44, Math.round(80 * scale), 80)}px`);
             document.documentElement.style.setProperty('--tl-icon-size', `${clamp(16, Math.round(24 * scale), 24)}px`);
-            document.documentElement.style.setProperty('--tl-text-size', `${clamp(7.5, 11 * scale, 11)}px`);
-            document.documentElement.style.setProperty('--tl-date-size', `${clamp(9, 14 * scale, 14)}px`);
-            document.documentElement.style.setProperty('--tl-category-size', `${clamp(7.5, 11 * scale, 11)}px`);
-            document.documentElement.style.setProperty('--tl-placeholder-size', `${clamp(9, 14 * scale, 14)}px`);
-            document.documentElement.style.setProperty('--tl-card-pad', `${clamp(3, Math.round(6 * scale), 6)}px`);
+            document.documentElement.style.setProperty('--tl-text-size', `${clamp(8.5, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-date-size', `${clamp(9.5, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-category-size', `${clamp(8, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-placeholder-size', `${clamp(9.5, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-card-pad', `${clamp(4, Math.round(6 * scale), 6)}px`);
+            document.documentElement.style.setProperty('--tl-inner-gap', `${clamp(2, Math.round(6 * scale), 6)}px`);
+            document.documentElement.style.setProperty('--tl-date-pad-x', `${clamp(3, Math.round(8 * scale), 8)}px`);
+            document.documentElement.style.setProperty('--tl-border', width < 105 ? '2px' : '3px');
+
+            requestAnimationFrame(fitCardText);
+        }
+
+        function fitCardText() {
+            const textBlocks = document.querySelectorAll('.event-text');
+            if (!textBlocks.length) return;
+
+            const rootStyles = getComputedStyle(document.documentElement);
+            const baseSize = parseFloat(rootStyles.getPropertyValue('--tl-text-size')) || 11;
+            const minSize = 7.5;
+
+            textBlocks.forEach(textBlock => {
+                textBlock.style.fontSize = `${baseSize}px`;
+                textBlock.style.lineHeight = '1.05';
+                textBlock.style.overflowY = 'visible';
+
+                // If a longer event still does not fit, reduce just that card's text a little more.
+                // This prevents text being chopped off when the date is revealed in the timeline.
+                let size = baseSize;
+                while (textBlock.scrollHeight > textBlock.clientHeight && size > minSize) {
+                    size -= 0.25;
+                    textBlock.style.fontSize = `${size}px`;
+                }
+
+                // Extremely long descriptions are still readable rather than being cut off.
+                if (textBlock.scrollHeight > textBlock.clientHeight) {
+                    textBlock.style.overflowY = 'auto';
+                }
+            });
         }
 
         function initGame() {
@@ -283,7 +384,7 @@
                 card.setAttribute('data-id', ev.id);
 
                 card.innerHTML = `
-                    <div class="flex w-full items-center justify-start gap-1 mb-1.5 pointer-events-none">
+                    <div class="card-top-row flex w-full items-center justify-start gap-1 pointer-events-none">
                         <div class="card-icon rounded-full border-2 border-gray-600 flex items-center justify-center bg-gray-600 text-white shadow-inner flex-shrink-0">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-10 9h3v11h14v-11h3l-10-9zm0 4.5c1.5 2 3 4 3 6.5 0 2.5-1.5 4-3 5.5-1.5-1.5-3-3-3-5.5 0-2.5 1.5-4.5 3-6.5z"/></svg>
                         </div>
@@ -306,6 +407,7 @@
                 bankContainer.appendChild(card);
             });
 
+            updateTimelineTileSizing();
             setupInteractions();
         }
 
@@ -356,6 +458,7 @@
                 card.classList.add('locked-in-timeline', 'border-emerald-500', 'cursor-default');
                 card.querySelector('.event-date').classList.remove('hidden');
                 slot.appendChild(card);
+                requestAnimationFrame(fitCardText);
                 score++;
                 document.getElementById('score-display').innerText = score;
                 if (score === gameData.length) {
