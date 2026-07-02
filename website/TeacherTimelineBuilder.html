@@ -960,17 +960,27 @@ ${lines.join(',\n')}
             }
         }
 
+        async function getExistingQuizzesFolder(websiteRootHandle) {
+            try {
+                return await websiteRootHandle.getDirectoryHandle('quizzes', { create: false });
+            } catch (error) {
+                throw new Error('The selected folder must be the main website folder and it must already contain a quizzes folder. Please select the folder that contains index.html and the quizzes folder.');
+            }
+        }
+
         async function validateWebsiteRootFolder(folderHandle) {
             const selectedName = String(folderHandle && folderHandle.name ? folderHandle.name : '').toLowerCase();
 
             if (selectedName === 'quizzes') {
-                throw new Error('You selected the quizzes folder. Please select the main website folder instead — the one that contains index.html.');
+                throw new Error('You selected the quizzes folder. Please select the main website folder instead — the one that contains index.html and the quizzes folder.');
             }
 
             const hasIndex = await folderContainsFile(folderHandle, 'index.html');
             if (!hasIndex) {
                 throw new Error('The selected folder does not contain index.html. Please select the main website folder, not the quizzes folder.');
             }
+
+            await getExistingQuizzesFolder(folderHandle);
         }
 
         async function addToWebsite() {
@@ -986,12 +996,12 @@ ${lines.join(',\n')}
             }
 
             try {
-                $('statusText').innerText = 'Choose the main website folder — the folder that contains index.html. Do not choose quizzes.';
+                $('statusText').innerText = 'Choose the main website folder — the folder that contains index.html and the existing quizzes folder. Do not choose the quizzes folder itself.';
                 const websiteRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
 
                 await validateWebsiteRootFolder(websiteRootHandle);
 
-                const quizzesFolderHandle = await websiteRootHandle.getDirectoryHandle('quizzes', { create: true });
+                const quizzesFolderHandle = await getExistingQuizzesFolder(websiteRootHandle);
                 const fileHandle = await quizzesFolderHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(text);
@@ -1000,7 +1010,7 @@ ${lines.join(',\n')}
                 const manifestEntry = buildQuizManifestEntry(fileName, text);
                 await updateQuizManifest(websiteRootHandle, manifestEntry);
 
-                $('statusText').innerText = `Added quizzes/${fileName} and updated quiz-list.json next to index.html.`;
+                $('statusText').innerText = `Added quizzes/${fileName} and updated quiz-list.json in the main website folder.`;
             } catch (error) {
                 if (error && error.name === 'AbortError') {
                     $('statusText').innerText = 'Add to website cancelled.';
