@@ -362,7 +362,7 @@
 
             <section class="panel">
                 <h2 class="panel-title">2. Card details</h2>
-                <p class="panel-help">Choose how many cards you want, then enter the year, event text and image link or upload an image for each card. If two cards have the same year, they will be ordered in the same order they appear below.</p>
+                <p class="panel-help">Choose how many cards you want, then enter the order label, event text and image link or upload an image for each card. The correct answer is based on the order of the cards in this builder: Card 1 comes first, Card 2 comes second, and so on.</p>
 
                 <div class="card-toolbar">
                     <div class="field card-count-box">
@@ -530,8 +530,8 @@
                     <h3>Card ${index + 1}</h3>
                     <div class="form-grid three">
                         <div class="field">
-                            <label for="cardYear-${index}">Year / date shown</label>
-                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. ${escapeAttribute(example.year)}">
+                            <label for="cardYear-${index}">Order label shown on card</label>
+                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. ${escapeAttribute(example.year)} or Ice Age">
                         </div>
                         <div class="field full">
                             <label for="cardText-${index}">Event text</label>
@@ -685,16 +685,6 @@
         function escapeAttribute(value) {
             return escapeHtml(value).replace(/"/g, '&quot;');
         }
-
-        function parseSortYear(dateText, index, duplicateTracker) {
-            const match = String(dateText).match(/-?\d+(?:\.\d+)?/);
-            const base = match ? Number(match[0]) : index + 1;
-            const key = String(base);
-            const duplicateIndex = duplicateTracker[key] || 0;
-            duplicateTracker[key] = duplicateIndex + 1;
-            return Number((base + duplicateIndex * 0.001).toFixed(3));
-        }
-
         function buildTeacherSettingsCode(cardsCount) {
             const penalty = Math.max(0, Number($('wrongPlacementPenaltySeconds').value) || 0);
             const soundOn = $('soundEffectsOnByDefault').value === 'true';
@@ -724,15 +714,15 @@
         }
 
         function buildCardsCode(cards) {
-            const duplicateTracker = {};
             const lines = cards.map((card, index) => {
-                const sortYear = parseSortYear(card.year, index, duplicateTracker);
+                const sortOrder = index + 1;
                 const imageLink = uploadedImages.get(index) || normaliseImageLink(card.imageLink);
-                return `            { sortYear: ${sortYear}, displayDate: ${jsString(card.year)}, text: ${jsString(card.text)}, image: ${jsString(imageLink)}, emoji: "📜" }`;
+                return `            { sortYear: ${sortOrder}, displayDate: ${jsString(card.year)}, text: ${jsString(card.text)}, image: ${jsString(imageLink)}, emoji: "📜" }`;
             });
 
             return `const allGameCards = [
-${lines.join(',\n')}
+${lines.join(',
+')}
         ];`;
         }
 
@@ -746,11 +736,8 @@ ${lines.join(',\n')}
             const problems = [];
 
             cards.forEach((card, index) => {
-                if (!card.year) problems.push(`Card ${index + 1}: add a year/date.`);
+                if (!card.year) problems.push(`Card ${index + 1}: add the label to show on the card.`);
                 if (!card.text) problems.push(`Card ${index + 1}: add event text.`);
-                if (card.year && !String(card.year).match(/-?\d+(?:\.\d+)?/)) {
-                    problems.push(`Card ${index + 1}: the year/date needs to include a number so the game can sort it.`);
-                }
             });
 
             return problems;
@@ -780,7 +767,7 @@ ${lines.join(',\n')}
                 .replace(/const allGameCards = \[[\s\S]*?\n        \];/, cardsCode);
 
             $('outputCode').value = output;
-            $('statusText').innerText = `Generated ${cards.length} card game code. Google Drive image links have been converted to thumbnails where needed, and uploaded images have been embedded into the HTML.`;
+            $('statusText').innerText = `Generated ${cards.length} card game code. The correct order is based on the order of cards in the builder, and uploaded images have been embedded into the HTML.`;
             return output;
         }
 
