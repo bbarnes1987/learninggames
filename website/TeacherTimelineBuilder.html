@@ -407,7 +407,7 @@
 
             <section class="panel">
                 <h2 class="panel-title">3. Generate and copy the game code</h2>
-                <p class="panel-help">Click generate, then copy the full HTML code into your website embed area, download it as an HTML file, or add it into your website quizzes folder.</p>
+                <p class="panel-help">Click generate, then copy the full HTML code into your website embed area, download it as an HTML file, or add it directly into your existing quizzes folder.</p>
 
                 <div class="actions">
                     <button class="primary" id="generateButton" type="button">Generate game code</button>
@@ -910,16 +910,15 @@ ${lines.join(',\n')}
             }
 
             try {
-                $('statusText').innerText = 'Choose your website root folder...';
-                const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-                const quizzesHandle = await rootHandle.getDirectoryHandle('quizzes', { create: true });
-                const fileHandle = await quizzesHandle.getFileHandle(fileName, { create: true });
+                $('statusText').innerText = 'Choose your quizzes folder...';
+                const selectedFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                const fileHandle = await selectedFolderHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
 
                 await writable.write(text);
                 await writable.close();
 
-                $('statusText').innerText = `Added to website: quizzes/${fileName}`;
+                $('statusText').innerText = `Added to selected folder: ${fileName}`;
             } catch (error) {
                 if (error && error.name === 'AbortError') {
                     $('statusText').innerText = 'Add to website cancelled.';
