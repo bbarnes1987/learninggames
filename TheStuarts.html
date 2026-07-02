@@ -16,7 +16,7 @@
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #f0fdf4; 
+            background-color: var(--theme-page-bg, #f0fdf4);
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
@@ -24,7 +24,63 @@
             font-family: 'Pacifico', cursive;
         }
 
+        /* Theme colours controlled by teacherSettings at the top of the script. */
+        :root {
+            --theme-page-bg: #f0fdf4;
+            --theme-heading-bg: #059669;
+            --theme-heading-text: #ffffff;
+            --theme-heading-dark: #047857;
+            --theme-soft-bg: #d1fae5;
+            --theme-soft-border: #a7f3d0;
+        }
 
+        .app-header {
+            border-bottom-color: var(--theme-heading-bg) !important;
+        }
+
+        .game-title-text,
+        .win-title {
+            color: var(--theme-heading-dark) !important;
+        }
+
+        .score-pill {
+            background-color: var(--theme-soft-bg) !important;
+            color: var(--theme-heading-dark) !important;
+            border-color: var(--theme-soft-border) !important;
+        }
+
+        .timeline-line {
+            background-color: var(--theme-soft-border) !important;
+        }
+
+        .timeline-slot:not(.occupied):hover {
+            background-color: var(--theme-soft-bg) !important;
+        }
+
+        .card-bank-title-bar,
+        .event-date,
+        .play-again-button {
+            background-color: var(--theme-heading-bg) !important;
+            color: var(--theme-heading-text) !important;
+        }
+
+        .card-bank-title-text {
+            color: var(--theme-heading-text) !important;
+        }
+
+        .card-bank-panel {
+            background-color: var(--theme-soft-bg) !important;
+            border-color: var(--theme-heading-bg) !important;
+        }
+
+        .locked-in-timeline {
+            border-color: var(--theme-heading-bg) !important;
+        }
+
+        .emoji-fallback {
+            font-size: calc(var(--tl-img-size) * 0.45);
+            line-height: 1;
+        }
 
         /* Dynamic timeline/card sizing
            These variables are changed by JS depending on how many cards are in gameData. */
@@ -197,13 +253,13 @@
 <body class="text-gray-800 min-h-screen flex flex-col">
 
     <!-- Game Header -->
-    <header class="bg-white shadow-md p-4 sticky top-0 z-50 border-b-4 border-emerald-500">
+    <header class="app-header bg-white shadow-md p-4 sticky top-0 z-50 border-b-4 border-emerald-500">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
-                <p class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
+                <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
+                <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
             </div>
-            <div class="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
+            <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full font-bold text-xl shadow-inner border-2 border-emerald-200">
                 Score: <span id="score-display">0</span> / <span id="total-display">0</span>
             </div>
         </div>
@@ -214,9 +270,9 @@
         
         <!-- Timeline Section -->
         <section class="w-full bg-white rounded-3xl p-6 shadow-xl border-4 border-gray-100 relative overflow-hidden">
-            <h2 class="text-xl font-bold mb-4 text-center bg-gray-100 py-1 rounded-xl text-gray-700 uppercase tracking-widest">Chronological Order</h2>
+            <h2 id="timeline-heading" class="timeline-heading text-xl font-bold mb-4 text-center bg-gray-100 py-1 rounded-xl text-gray-700 uppercase tracking-widest">Chronological Order</h2>
             
-            <div class="absolute left-0 right-0 top-[60%] h-2 bg-gray-200 rounded-full z-0 hidden sm:block"></div>
+            <div class="timeline-line absolute left-0 right-0 top-[60%] h-2 bg-gray-200 rounded-full z-0 hidden sm:block"></div>
 
             <div id="timeline-slots" class="flex flex-row overflow-x-auto gap-4 relative z-10 pb-4 pt-1 snap-x items-center px-2">
                 <!-- Slots injected by JS -->
@@ -225,10 +281,10 @@
 
         <!-- Card Bank -->
         <section class="w-full">
-            <div class="bg-emerald-600 rounded-t-3xl p-3 text-center">
-                <h2 class="text-xl font-bold text-white uppercase tracking-widest tracking-widest">Historical Events</h2>
+            <div class="card-bank-title-bar bg-emerald-600 rounded-t-3xl p-3 text-center">
+                <h2 id="event-bank-heading" class="card-bank-title-text text-xl font-bold text-white uppercase tracking-widest tracking-widest">Historical Events</h2>
             </div>
-            <div class="bg-emerald-50 rounded-b-3xl p-6 shadow-xl border-4 border-t-0 border-emerald-600 min-h-[300px]">
+            <div class="card-bank-panel bg-emerald-50 rounded-b-3xl p-6 shadow-xl border-4 border-t-0 border-emerald-600 min-h-[300px]">
                 <div id="card-bank" class="flex flex-wrap justify-center gap-4">
                     <!-- Cards injected by JS -->
                 </div>
@@ -241,9 +297,9 @@
     <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-8 max-w-md text-center transform scale-90 transition-transform duration-300 shadow-2xl" id="win-content">
             <div class="text-7xl mb-4">🏆</div>
-            <h2 class="text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
-            <p class="text-xl text-gray-600 mb-8">You have perfectly ordered the timeline of The Stuarts.</p>
-            <button onclick="location.reload()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
+            <h2 id="win-title" class="win-title text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
+            <p id="win-message" class="text-xl text-gray-600 mb-8">You have perfectly ordered the timeline of The Stuarts.</p>
+            <button id="play-again-button" onclick="location.reload()" class="play-again-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
                 Play Again
             </button>
         </div>
@@ -256,26 +312,159 @@
          * ==========================================
          * Using the Google Drive Thumbnail service for maximum compatibility.
          */
-        const gameData = [
-            { sortYear: 1603, displayDate: "1603", text: "James I becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=167CzaPg6Z_S1UbBE6R4DvQw9jBq6O_YC&sz=w220" },
-            { sortYear: 1604, displayDate: "1604", text: "Gunpowder Plot. Guy Fawkes attempts to kill James I.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1Uin2vza8qPurYXI5wFPM9iQq9slD1R3E&sz=w220" },
-            { sortYear: 1625, displayDate: "1625", text: "Charles I becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1DRo1U3rdf7_ie7-4CvY_ZQodoDC7GiQM&sz=w220" },
-            { sortYear: 1649, displayDate: "1649", text: "Oliver Cromwell becomes 'Lord Protector'.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1EU31ds2sI6mxH2DOArD0vIdr42RPGHAa&sz=w220" },
-            { sortYear: 1660.1, displayDate: "1660", text: "Charles II becomes King.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1Ji2t9BA-0itPQp8xibiylNWUflcoY67T&sz=w220" },
-            { sortYear: 1660.2, displayDate: "1660", text: "Samuel Pepys starts his diary.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1S-9PhvHPz0qg0V2L9Bvqk98cvZXV443A&sz=w220" },
-            { sortYear: 1664, displayDate: "1664 - 1665", text: "The Plague arrives in London.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=11FNqRXDX7MvG6VDkFMv2NVLHUoRdWdEb&sz=w220" },
-            { sortYear: 1666, displayDate: "1666", text: "The Great Fire of London.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1ub2WkGKA6uK5ADPKz9wN2esf_jAc4usN&sz=w220" },
-            { sortYear: 1688, displayDate: "1688", text: "The Glorious Revolution.", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220" },
-            { sortYear: 1700, displayDate: "1700", text: "Test Card", category: "The Stuarts", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220" }
-            
+        /*
+         * Quick settings for teachers
+         * ---------------------------
+         * This is the main section to edit.
+         *
+         * Colours must be hex colours, e.g. "#059669", "#2563eb", "#7c3aed".
+         *
+         * To change the topic shown on every card, edit categoryName once.
+         * Any text containing {category} will automatically use that same topic.
+         *
+         * cardsToUse cannot be higher than the number of cards in allGameCards.
+         * If you want 10 cards, allGameCards needs at least 10 card entries.
+         */
+        const teacherSettings = {
+            cardsToUse: 9,
+
+            // Main topic/category shown on every card
+            categoryName: "The Stuarts",
+
+            // Page/theme colours
+            backgroundColour: "#f0fdf4",
+            backgroundPatternColour: "#22c55e",
+            headingSectionColour: "#059669",
+            headingTextColour: "#ffffff",
+
+            // Wording shown around the game
+            gameTitle: "Timeline Challenge! ⏳",
+            subtitleText: "Order the events of {category} correctly.",
+            timelineHeading: "Chronological Order",
+            eventBankHeading: "Historical Events",
+            winTitle: "Incredible!",
+            winMessage: "You have perfectly ordered the timeline of {category}.",
+            playAgainText: "Play Again"
+        };
+
+        /*
+         * Card library
+         * ------------
+         * Add extra cards here. Each card needs:
+         * sortYear: the order the computer uses
+         * displayDate: what children see after placing the card
+         * text: the event description
+         * image: optional image URL. Leave as "" to use an emoji placeholder.
+         * emoji: optional fallback if no image is provided
+         *
+         * The category is no longer written on every card.
+         * It is taken from teacherSettings.categoryName above.
+         *
+         * Tip: if two events happen in the same year, use decimals for sortYear,
+         * e.g. 1660.1 and 1660.2, so the game knows which one comes first.
+         */
+        const allGameCards = [
+            { sortYear: 1603, displayDate: "1603", text: "James I becomes King.", image: "https://drive.google.com/thumbnail?id=167CzaPg6Z_S1UbBE6R4DvQw9jBq6O_YC&sz=w220", emoji: "👑" },
+            { sortYear: 1604, displayDate: "1604", text: "Gunpowder Plot. Guy Fawkes attempts to kill James I.", image: "https://drive.google.com/thumbnail?id=1Uin2vza8qPurYXI5wFPM9iQq9slD1R3E&sz=w220", emoji: "💥" },
+            { sortYear: 1625, displayDate: "1625", text: "Charles I becomes King.", image: "https://drive.google.com/thumbnail?id=1DRo1U3rdf7_ie7-4CvY_ZQodoDC7GiQM&sz=w220", emoji: "👑" },
+            { sortYear: 1649, displayDate: "1649", text: "Oliver Cromwell becomes 'Lord Protector'.", image: "https://drive.google.com/thumbnail?id=1EU31ds2sI6mxH2DOArD0vIdr42RPGHAa&sz=w220", emoji: "⚔️" },
+            { sortYear: 1660.1, displayDate: "1660", text: "Charles II becomes King.", image: "https://drive.google.com/thumbnail?id=1Ji2t9BA-0itPQp8xibiylNWUflcoY67T&sz=w220", emoji: "👑" },
+            { sortYear: 1660.2, displayDate: "1660", text: "Samuel Pepys starts his diary.", image: "https://drive.google.com/thumbnail?id=1S-9PhvHPz0qg0V2L9Bvqk98cvZXV443A&sz=w220", emoji: "📖" },
+            { sortYear: 1664, displayDate: "1664 - 1665", text: "The Plague arrives in London.", image: "https://drive.google.com/thumbnail?id=11FNqRXDX7MvG6VDkFMv2NVLHUoRdWdEb&sz=w220", emoji: "🦠" },
+            { sortYear: 1666, displayDate: "1666", text: "The Great Fire of London.", image: "https://drive.google.com/thumbnail?id=1ub2WkGKA6uK5ADPKz9wN2esf_jAc4usN&sz=w220", emoji: "🔥" },
+            { sortYear: 1688, displayDate: "1688", text: "The Glorious Revolution.", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220", emoji: "🏰" },
+            { sortYear: 1707, displayDate: "1707", text: "The Act of Union creates Great Britain.", image: "", emoji: "🇬🇧" }
         ];
+
+        function getGameData() {
+            const requestedCards = Number(teacherSettings.cardsToUse) || allGameCards.length;
+            const safeCardCount = Math.max(1, Math.min(requestedCards, allGameCards.length));
+
+            if (requestedCards > allGameCards.length) {
+                console.warn(`cardsToUse is set to ${requestedCards}, but only ${allGameCards.length} cards exist in allGameCards. Add more cards to allGameCards to increase the game.`);
+            }
+
+            return allGameCards.slice(0, safeCardCount).map(card => ({
+                ...card,
+                category: teacherSettings.categoryName
+            }));
+        }
+
+        const gameData = getGameData();
 
         let eventsWithIds = [];
         let score = 0;
         let draggedCard = null;
         let touchSelectedCard = null;
 
+        function textWithCategory(text) {
+            return String(text).replace(/\{category\}/g, teacherSettings.categoryName);
+        }
 
+        function normaliseHex(hex, fallback) {
+            const value = String(hex || '').trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
+            if (/^[0-9a-fA-F]{6}$/.test(value)) return `#${value}`;
+            return fallback;
+        }
+
+        function hexToRgb(hex) {
+            const safeHex = normaliseHex(hex, '#059669').slice(1);
+            return {
+                r: parseInt(safeHex.slice(0, 2), 16),
+                g: parseInt(safeHex.slice(2, 4), 16),
+                b: parseInt(safeHex.slice(4, 6), 16)
+            };
+        }
+
+        function rgbToHex({ r, g, b }) {
+            return `#${[r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+        }
+
+        function mixHex(hexA, hexB, amountOfB) {
+            const a = hexToRgb(hexA);
+            const b = hexToRgb(hexB);
+            return rgbToHex({
+                r: a.r + (b.r - a.r) * amountOfB,
+                g: a.g + (b.g - a.g) * amountOfB,
+                b: a.b + (b.b - a.b) * amountOfB
+            });
+        }
+
+        function createPlusPattern(patternColour) {
+            const encodedColour = encodeURIComponent(normaliseHex(patternColour, '#22c55e'));
+            return `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='${encodedColour}' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
+        }
+
+        function applyTeacherSettings() {
+            const root = document.documentElement;
+            const backgroundColour = normaliseHex(teacherSettings.backgroundColour, '#f0fdf4');
+            const patternColour = normaliseHex(teacherSettings.backgroundPatternColour || teacherSettings.headingSectionColour, '#22c55e');
+            const headingColour = normaliseHex(teacherSettings.headingSectionColour, '#059669');
+            const headingTextColour = normaliseHex(teacherSettings.headingTextColour, '#ffffff');
+            const headingDark = mixHex(headingColour, '#000000', 0.18);
+            const softBg = mixHex(headingColour, '#ffffff', 0.86);
+            const softBorder = mixHex(headingColour, '#ffffff', 0.68);
+
+            root.style.setProperty('--theme-page-bg', backgroundColour);
+            root.style.setProperty('--theme-heading-bg', headingColour);
+            root.style.setProperty('--theme-heading-text', headingTextColour);
+            root.style.setProperty('--theme-heading-dark', headingDark);
+            root.style.setProperty('--theme-soft-bg', softBg);
+            root.style.setProperty('--theme-soft-border', softBorder);
+
+            document.body.style.backgroundColor = backgroundColour;
+            document.body.style.backgroundImage = createPlusPattern(patternColour);
+            document.title = textWithCategory(teacherSettings.gameTitle || 'Historical Timeline Game');
+
+            document.getElementById('game-title').innerText = textWithCategory(teacherSettings.gameTitle);
+            document.getElementById('game-subtitle').innerText = textWithCategory(teacherSettings.subtitleText);
+            document.getElementById('timeline-heading').innerText = textWithCategory(teacherSettings.timelineHeading);
+            document.getElementById('event-bank-heading').innerText = textWithCategory(teacherSettings.eventBankHeading);
+            document.getElementById('win-title').innerText = textWithCategory(teacherSettings.winTitle);
+            document.getElementById('win-message').innerText = textWithCategory(teacherSettings.winMessage);
+            document.getElementById('play-again-button').innerText = textWithCategory(teacherSettings.playAgainText);
+        }
 
         function clamp(min, value, max) {
             return Math.max(min, Math.min(value, max));
@@ -359,6 +548,7 @@
         }
 
         function initGame() {
+            applyTeacherSettings();
             document.getElementById('total-display').innerText = gameData.length;
             eventsWithIds = gameData.map((item, index) => ({ ...item, id: `event-${index}` }));
 
@@ -394,12 +584,13 @@
                     
                     <div class="event-date hidden bg-emerald-600 text-white font-black px-2 py-0.5 rounded mb-1.5 shadow w-full">${ev.displayDate}</div>
                     
-                    <!-- Portrait Frame: Increased scale to 1.6 to crop out white borders -->
+                    <!-- Portrait Frame: image if provided, otherwise emoji fallback -->
                     <div class="portrait-frame rounded-full border-[3px] border-gray-600 mb-1.5 shadow-sm bg-white flex-shrink-0 flex items-center justify-center overflow-hidden relative">
-                        <img src="${ev.image}" 
+                        ${ev.image ? `<img src="${ev.image}" 
                              class="w-full h-full object-cover relative z-10 scale-[1.6]" 
                              loading="lazy"
-                             onerror="this.parentElement.innerHTML='<div class=\\'text-[10px] p-1 font-bold text-gray-300 uppercase leading-tight\\'>Blocked</div>'">
+                             onerror="this.style.display='none'; this.parentElement.querySelector('.emoji-fallback').classList.remove('hidden');">` : ''}
+                        <span class="emoji-fallback ${ev.image ? 'hidden' : ''}">${ev.emoji || '🏛️'}</span>
                     </div>
                     
                     <p class="event-text font-bold text-gray-800 flex-grow flex items-center justify-center overflow-hidden">${ev.text}</p>
@@ -474,7 +665,8 @@
         }
 
         function fireConfetti() {
-            const colors = ['#34d399', '#fcd34d', '#f87171', '#60a5fa'];
+            const themeColour = normaliseHex(teacherSettings.headingSectionColour, '#059669');
+            const colors = [themeColour, '#fcd34d', '#f87171', '#60a5fa'];
             for (let i = 0; i < 50; i++) {
                 const c = document.createElement('div');
                 c.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-20px;width:10px;height:10px;background:${colors[Math.floor(Math.random()*colors.length)]};z-index:200;pointer-events:none;`;
