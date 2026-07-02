@@ -18,6 +18,10 @@
             --ink: #1f2937;
             --muted: #6b5a80;
             --border: rgba(156, 136, 192, 0.35);
+            --success: #138a52;
+            --warning-bg: #fffbeb;
+            --warning-border: #fde68a;
+            --warning-text: #92400e;
         }
 
         * { box-sizing: border-box; }
@@ -83,6 +87,12 @@
             padding: clamp(1.25rem, 4vw, 3rem) 0;
         }
 
+        .sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
         .section-card {
             background: var(--card-bg);
             border: 3px solid var(--border);
@@ -101,7 +111,7 @@
 
         .section-intro {
             margin: 0.65rem auto 1.75rem;
-            max-width: 720px;
+            max-width: 760px;
             text-align: center;
             color: var(--muted);
             font-weight: 800;
@@ -143,6 +153,10 @@
 
         .game-button:active { transform: translateY(-1px); }
 
+        .quiz-button {
+            min-height: 132px;
+        }
+
         .icon {
             width: 56px;
             height: 56px;
@@ -153,6 +167,7 @@
             color: white;
             font-size: 1.75rem;
             box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.18);
+            flex: 0 0 auto;
         }
 
         .button-title {
@@ -167,6 +182,67 @@
             font-size: 0.95rem;
             font-weight: 800;
             line-height: 1.25;
+        }
+
+        .quiz-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            margin: -0.5rem 0 1.25rem;
+        }
+
+        .tool-button {
+            border: 0;
+            border-radius: 999px;
+            padding: 0.8rem 1.05rem;
+            font: inherit;
+            font-weight: 900;
+            cursor: pointer;
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 8px 18px rgba(91, 50, 147, 0.22);
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+
+        .tool-button:hover,
+        .tool-button:focus-visible {
+            transform: translateY(-2px);
+            filter: brightness(0.98);
+            outline: none;
+        }
+
+        .tool-button.secondary {
+            background: #ffffff;
+            color: #3f2368;
+            border: 3px solid rgba(156, 136, 192, 0.45);
+            box-shadow: 0 8px 18px rgba(91, 50, 147, 0.08);
+        }
+
+        .status-box {
+            margin: 1rem auto 0;
+            max-width: 820px;
+            border-radius: 1.1rem;
+            padding: 0.85rem 1rem;
+            background: #f4f0fb;
+            border: 2px solid rgba(156, 136, 192, 0.35);
+            color: var(--muted);
+            text-align: center;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+
+        .status-box.success {
+            color: var(--success);
+            background: #ecfdf5;
+            border-color: #bbf7d0;
+        }
+
+        .status-box.warning {
+            background: var(--warning-bg);
+            border-color: var(--warning-border);
+            color: var(--warning-text);
         }
 
         footer {
@@ -192,7 +268,7 @@
         </header>
 
         <main>
-            <div class="wrap">
+            <div class="wrap sections">
                 <section class="section-card" aria-labelledby="builder-links-heading">
                     <h2 id="builder-links-heading" class="section-heading">Choose a game builder</h2>
                     <p class="section-intro">Select the type of interactive activity you want to create.</p>
@@ -217,12 +293,195 @@
                         </a>
                     </nav>
                 </section>
+
+                <section class="section-card" aria-labelledby="created-quizzes-heading">
+                    <h2 id="created-quizzes-heading" class="section-heading">Quizzes created</h2>
+                    <p class="section-intro">This section loads automatically from quizzes/quiz-list.json. Each button name comes from the title saved for that quiz.</p>
+
+                    <div class="quiz-toolbar">
+                        <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose quizzes folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
+                        <button class="tool-button secondary" id="refreshQuizzesButton" type="button">Refresh quizzes</button>
+                    </div>
+
+                    <nav id="createdQuizzesGrid" class="game-links" aria-label="Created quiz links"></nav>
+                    <div id="quizStatus" class="status-box">Loading quizzes from quizzes/quiz-list.json...</div>
+                </section>
             </div>
         </main>
 
         <footer>
-            Place this file in the root website folder alongside the three teacher builder pages.
+            Place this file in the root website folder. The quiz buttons load from quizzes/quiz-list.json.
         </footer>
     </div>
+
+    <script>
+        const QUIZ_FOLDER_NAME = 'quizzes';
+        const MANIFEST_PATH = `${QUIZ_FOLDER_NAME}/quiz-list.json`;
+        const SCAN_INTERVAL_MS = 10000;
+
+        const createdQuizzesGrid = document.getElementById('createdQuizzesGrid');
+        const quizStatus = document.getElementById('quizStatus');
+        const chooseQuizzesFolderButton = document.getElementById('chooseQuizzesFolderButton');
+        const refreshQuizzesButton = document.getElementById('refreshQuizzesButton');
+
+        let selectedQuizzesFolderHandle = null;
+        let scanTimer = null;
+        let latestRenderedSignature = '';
+
+        function setStatus(message, type = '') {
+            quizStatus.textContent = message;
+            quizStatus.className = `status-box ${type}`.trim();
+        }
+
+        function titleFromHtml(html, fallback) {
+            try {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const title = (doc.querySelector('title')?.textContent || '').trim();
+                return title || fallback;
+            } catch (error) {
+                const match = String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                return match ? match[1].replace(/\s+/g, ' ').trim() : fallback;
+            }
+        }
+
+        function tidyTitleFromFilename(fileName) {
+            return String(fileName)
+                .replace(/\.html?$/i, '')
+                .replace(/[-_]+/g, ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function safeRelativeQuizHref(fileName) {
+            return `${QUIZ_FOLDER_NAME}/${encodeURIComponent(fileName)}`;
+        }
+
+        function renderQuizzes(quizzes, sourceText) {
+            const validQuizzes = quizzes
+                .filter(quiz => quiz && quiz.file && quiz.title)
+                .sort((a, b) => a.title.localeCompare(b.title));
+
+            const signature = JSON.stringify(validQuizzes.map(quiz => [quiz.file, quiz.title]));
+            if (signature === latestRenderedSignature) return;
+            latestRenderedSignature = signature;
+
+            createdQuizzesGrid.innerHTML = '';
+
+            if (!validQuizzes.length) {
+                setStatus('No quizzes found yet. Add a quiz to the quizzes folder, then refresh this page or choose the quizzes folder.', 'warning');
+                return;
+            }
+
+            for (const quiz of validQuizzes) {
+                const link = document.createElement('a');
+                link.className = 'game-button quiz-button';
+                link.href = quiz.href || safeRelativeQuizHref(quiz.file);
+                link.innerHTML = `
+                    <span class="icon" aria-hidden="true">🎮</span>
+                    <span class="button-title"></span>
+                    <span class="button-help">Open quiz</span>
+                `;
+                link.querySelector('.button-title').textContent = quiz.title;
+                createdQuizzesGrid.appendChild(link);
+            }
+
+            setStatus(`${validQuizzes.length} quiz${validQuizzes.length === 1 ? '' : 'zes'} found${sourceText ? ` from ${sourceText}` : ''}. This list refreshes automatically while the page is open.`, 'success');
+        }
+
+        async function loadFromManifest() {
+            try {
+                const response = await fetch(`${MANIFEST_PATH}?v=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('No quiz manifest found.');
+
+                const manifest = await response.json();
+                const entries = Array.isArray(manifest) ? manifest : (manifest.quizzes || []);
+                const quizzes = [];
+
+                for (const entry of entries) {
+                    const file = typeof entry === 'string' ? entry : entry.file;
+                    if (!file || !/\.html?$/i.test(file)) continue;
+
+                    let title = typeof entry === 'object' ? entry.title : '';
+                    if (!title) {
+                        try {
+                            const quizResponse = await fetch(`${QUIZ_FOLDER_NAME}/${encodeURIComponent(file)}?v=${Date.now()}`, { cache: 'no-store' });
+                            const html = await quizResponse.text();
+                            title = titleFromHtml(html, tidyTitleFromFilename(file));
+                        } catch (error) {
+                            title = tidyTitleFromFilename(file);
+                        }
+                    }
+
+                    quizzes.push({ file, title });
+                }
+
+                renderQuizzes(quizzes, 'quiz-list.json');
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function scanSelectedFolder() {
+            if (!selectedQuizzesFolderHandle) {
+                const loaded = await loadFromManifest();
+                if (!loaded && !createdQuizzesGrid.children.length) {
+                    setStatus('No quiz-list.json was found yet. On the published website, add quizzes/quiz-list.json. For local testing, click Choose quizzes folder and select the existing quizzes folder.', 'warning');
+                }
+                return;
+            }
+
+            const quizzes = [];
+
+            try {
+                for await (const [fileName, handle] of selectedQuizzesFolderHandle.entries()) {
+                    if (handle.kind !== 'file' || !/\.html?$/i.test(fileName)) continue;
+                    const file = await handle.getFile();
+                    const html = await file.text();
+                    quizzes.push({
+                        file: fileName,
+                        title: titleFromHtml(html, tidyTitleFromFilename(fileName)),
+                        href: safeRelativeQuizHref(fileName)
+                    });
+                }
+
+                renderQuizzes(quizzes, 'the selected quizzes folder');
+            } catch (error) {
+                setStatus('The quizzes folder could not be scanned. Choose the quizzes folder again, then refresh quizzes.', 'warning');
+            }
+        }
+
+        function startPeriodicScan() {
+            if (scanTimer) clearInterval(scanTimer);
+            scanTimer = setInterval(scanSelectedFolder, SCAN_INTERVAL_MS);
+        }
+
+        chooseQuizzesFolderButton.addEventListener('click', async () => {
+            if (!window.showDirectoryPicker) {
+                setStatus('This browser does not support direct folder scanning. Use Chrome or Edge, or create quizzes/quiz-list.json for automatic hosted-site loading.', 'warning');
+                return;
+            }
+
+            try {
+                selectedQuizzesFolderHandle = await window.showDirectoryPicker({ mode: 'read' });
+                latestRenderedSignature = '';
+                await scanSelectedFolder();
+                startPeriodicScan();
+            } catch (error) {
+                setStatus('Folder selection cancelled. Choose the existing quizzes folder when you are ready.', 'warning');
+            }
+        });
+
+        refreshQuizzesButton.addEventListener('click', async () => {
+            latestRenderedSignature = '';
+            await scanSelectedFolder();
+        });
+
+        loadFromManifest().then((loaded) => {
+            if (!loaded) {
+                setStatus('No quiz-list.json was found yet. Add the starter quiz-list.json file into the quizzes folder, then add quizzes using the builder.', 'warning');
+            }
+            startPeriodicScan();
+        });
+    </script>
 </body>
 </html>

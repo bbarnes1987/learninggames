@@ -840,7 +840,8 @@ ${lines.join(',\n')}
 
             let output = template
                 .replace(/const teacherSettings = \{[\s\S]*?\n        \};/, teacherSettingsCode)
-                .replace(/const allGameCards = \[[\s\S]*?\n        \];/, cardsCode);
+                .replace(/const allGameCards = \[[\s\S]*?\n        \];/, cardsCode)
+                .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(getQuizPageTitle())}</title>`);
 
             $('outputCode').value = output;
             $('statusText').innerText = `Generated ${cards.length} card game code. The correct order is based on the order of cards in the builder, uploaded images have been embedded into the HTML, and the optional card icon has been applied.`;
@@ -877,8 +878,60 @@ ${lines.join(',\n')}
             return `${categorySlug}-timeline-quiz.html`;
         }
 
-        function downloadTextFile(text, fileName) {
-            const blob = new Blob([text], { type: 'text/html;charset=utf-8' });
+        function getQuizPageTitle() {
+            const category = textOrDefault('categoryName', 'Timeline');
+            const gameTitle = textOrDefault('gameTitle', 'Timeline Challenge! ⏳');
+            return `${category} - ${gameTitle}`;
+        }
+
+        function getTitleFromHtml(html, fallback = getQuizPageTitle()) {
+            const match = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            if (!match) return fallback;
+            const parser = document.createElement('textarea');
+            parser.innerHTML = match[1];
+            return (parser.value || match[1]).replace(/\s+/g, ' ').trim() || fallback;
+        }
+
+        function buildQuizManifestEntry(fileName, html) {
+            return {
+                title: getTitleFromHtml(html),
+                file: fileName,
+                type: 'timeline',
+                category: textOrDefault('categoryName', 'Timeline'),
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        async function readQuizManifest(folderHandle) {
+            try {
+                const manifestHandle = await folderHandle.getFileHandle('quiz-list.json');
+                const manifestFile = await manifestHandle.getFile();
+                const manifestText = await manifestFile.text();
+                const parsed = JSON.parse(manifestText || '{}');
+                const quizzes = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.quizzes) ? parsed.quizzes : []);
+                return quizzes.filter(quiz => quiz && quiz.file);
+            } catch (error) {
+                return [];
+            }
+        }
+
+        async function updateQuizManifest(folderHandle, entry) {
+            const existingQuizzes = await readQuizManifest(folderHandle);
+            const withoutCurrent = existingQuizzes.filter(quiz => quiz.file !== entry.file);
+            const quizzes = [...withoutCurrent, entry].sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
+            const manifest = {
+                quizzes,
+                updatedAt: new Date().toISOString()
+            };
+
+            const manifestHandle = await folderHandle.getFileHandle('quiz-list.json', { create: true });
+            const writable = await manifestHandle.createWritable();
+            await writable.write(JSON.stringify(manifest, null, 2));
+            await writable.close();
+        }
+
+        function downloadTextFile(text, fileName, mimeType = 'text/html;charset=utf-8') {
+            const blob = new Blob([text], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -905,20 +958,23 @@ ${lines.join(',\n')}
 
             if (!('showDirectoryPicker' in window)) {
                 downloadTextFile(text, fileName);
-                $('statusText').innerText = `Downloaded ${fileName}. Move it into your quizzes folder.`;
+                $('statusText').innerText = `Downloaded ${fileName}. Move it into your quizzes folder, then update quizzes/quiz-list.json.`;
                 return;
             }
 
             try {
-                $('statusText').innerText = 'Choose your quizzes folder...';
+                $('statusText').innerText = 'Choose your existing quizzes folder...';
                 const selectedFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
                 const fileHandle = await selectedFolderHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
-
                 await writable.write(text);
                 await writable.close();
 
-                $('statusText').innerText = `Added to selected folder: ${fileName}`;
+                const manifestEntry = buildQuizManifestEntry(fileName, text);
+                await updateQuizManifest(selectedFolderHandle, manifestEntry);
+
+                $('statusText').innerText = `Added ${fileName} and updated quiz-list.json.`;
             } catch (error) {
                 if (error && error.name === 'AbortError') {
                     $('statusText').innerText = 'Add to website cancelled.';
@@ -927,7 +983,7 @@ ${lines.join(',\n')}
 
                 console.error(error);
                 downloadTextFile(text, fileName);
-                $('statusText').innerText = `Could not write directly to the folder. Downloaded ${fileName}; move it into quizzes.`;
+                $('statusText').innerText = `Could not write directly to the folder. Downloaded ${fileName}; move it into quizzes and update quiz-list.json.`;
             }
         }
 
