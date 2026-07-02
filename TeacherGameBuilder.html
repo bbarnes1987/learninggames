@@ -244,6 +244,18 @@
             margin-top: 12px;
         }
 
+        .image-preview {
+            width: 100%;
+            max-width: 220px;
+            max-height: 140px;
+            object-fit: contain;
+            border-radius: 14px;
+            border: 2px solid #e9dff8;
+            background: #ffffff;
+            display: none;
+            margin-top: 10px;
+        }
+
         .swatch {
             min-width: 150px;
             border-radius: 15px;
@@ -350,7 +362,7 @@
 
             <section class="panel">
                 <h2 class="panel-title">2. Card details</h2>
-                <p class="panel-help">Choose how many cards you want, then enter the year, event text and image link for each card. If two cards have the same year, they will be ordered in the same order they appear below.</p>
+                <p class="panel-help">Choose how many cards you want, then enter the year, event text and image link or upload an image for each card. If two cards have the same year, they will be ordered in the same order they appear below.</p>
 
                 <div class="card-toolbar">
                     <div class="field card-count-box">
@@ -375,7 +387,7 @@
                             <option value="20">20</option>
                         </select>
                     </div>
-                    <div class="hint">Paste a Google Drive share link for each image. The builder will automatically convert it into the correct thumbnail link. Blank images use a scroll emoji placeholder.</div>
+                    <div class="hint">For each card, teachers can paste a Google Drive share link or upload an image. Uploaded images are embedded into the generated HTML. Blank images use a scroll emoji placeholder.</div>
                 </div>
 
                 <div id="cardsList" class="cards-list"></div>
@@ -418,7 +430,8 @@
         const MAX_CARDS = 20;
         const DEFAULT_CARD_COUNT = 9;
 
-        let cardData = Array.from({ length: DEFAULT_CARD_COUNT }, () => ({ year: '', text: '', image: '' }));
+        const uploadedImages = new Map();
+        let cardData = Array.from({ length: DEFAULT_CARD_COUNT }, () => ({ year: '', text: '', imageLink: '' }));
 
         const $ = (id) => document.getElementById(id);
 
@@ -476,7 +489,7 @@
                 collected.push({
                     year: ($(`cardYear-${i}`)?.value || '').trim(),
                     text: ($(`cardText-${i}`)?.value || '').trim(),
-                    image: ($(`cardImage-${i}`)?.value || '').trim()
+                    imageLink: ($(`cardImage-${i}`)?.value || '').trim()
                 });
             }
 
@@ -489,10 +502,13 @@
             const safeCount = clampCardCount(newCount);
 
             while (cardData.length < safeCount) {
-                cardData.push({ year: '', text: '', image: '' });
+                cardData.push({ year: '', text: '', imageLink: '' });
             }
 
             if (cardData.length > safeCount) {
+                for (const key of Array.from(uploadedImages.keys())) {
+                    if (Number(key) >= safeCount) uploadedImages.delete(key);
+                }
                 cardData = cardData.slice(0, safeCount);
             }
         }
@@ -505,7 +521,7 @@
                 const example = sampleCards[index] || {
                     year: '1714',
                     text: 'A key event happens.',
-                    image: 'https://drive.google.com/file/d/FILE_ID/view?usp=drive_link'
+                    imageLink: 'https://drive.google.com/file/d/FILE_ID/view?usp=drive_link'
                 };
                 const panel = document.createElement('div');
                 panel.className = 'card-editor';
@@ -522,8 +538,14 @@
                         </div>
                         <div class="field full">
                             <label for="cardImage-${index}">Image link</label>
-                            <input id="cardImage-${index}" type="url" value="${escapeAttribute(card.image)}" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=drive_link">
+                            <input id="cardImage-${index}" type="url" value="${escapeAttribute(card.imageLink || '')}" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=drive_link">
                             <div class="hint">Paste the normal Google Drive share link. It will be converted to a thumbnail link when the game code is generated.</div>
+                        </div>
+                        <div class="field full">
+                            <label for="cardUpload-${index}">Upload image (optional)</label>
+                            <input id="cardUpload-${index}" type="file" accept="image/*">
+                            <div class="hint">If an image is uploaded, it will be used instead of the image link and embedded into the generated HTML.</div>
+                            <img id="cardPreview-${index}" class="image-preview" alt="Card ${index + 1} image preview">
                         </div>
                     </div>
                 `;
@@ -531,6 +553,78 @@
             });
 
             activateClickToClearPlaceholders();
+            wireImageUploads();
+            refreshUploadPreviews();
+        }
+
+
+        function refreshUploadPreviews() {
+            cardData.forEach((_, index) => {
+                const preview = $(`cardPreview-${index}`);
+                if (!preview) return;
+                const dataUrl = uploadedImages.get(index);
+                if (dataUrl) {
+                    preview.src = dataUrl;
+                    preview.style.display = 'block';
+                } else {
+                    preview.removeAttribute('src');
+                    preview.style.display = 'none';
+                }
+            });
+        }
+
+        function wireImageUploads() {
+            document.querySelectorAll('input[id^="cardUpload-"]').forEach((input) => {
+                if (input.dataset.wired === 'true') return;
+                input.dataset.wired = 'true';
+                input.addEventListener('change', async () => {
+                    const index = Number(input.id.replace('cardUpload-', ''));
+                    const file = input.files && input.files[0];
+                    const preview = $(`cardPreview-${index}`);
+
+                    if (!file) {
+                        uploadedImages.delete(index);
+                        if (preview) {
+                            preview.removeAttribute('src');
+                            preview.style.display = 'none';
+                        }
+                        return;
+                    }
+
+                    try {
+                        const dataUrl = await resizeImageFile(file, 700, 0.82);
+                        uploadedImages.set(index, dataUrl);
+                        if (preview) {
+                            preview.src = dataUrl;
+                            preview.style.display = 'block';
+                        }
+                    } catch (error) {
+                        $('statusText').innerText = 'Could not read one of the uploaded images.';
+                    }
+                });
+            });
+        }
+
+        function resizeImageFile(file, maxSize, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = () => {
+                        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.width * scale));
+                        canvas.height = Math.max(1, Math.round(img.height * scale));
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         function escapeHtml(value) {
@@ -631,7 +725,7 @@ ${lines.join(',\n')}
                 .replace(/const allGameCards = \[[\s\S]*?\n        \];/, cardsCode);
 
             $('outputCode').value = output;
-            $('statusText').innerText = `Generated ${cards.length} card game code. Google Drive image links have been converted to thumbnails where needed.`;
+            $('statusText').innerText = `Generated ${cards.length} card game code. Google Drive image links have been converted to thumbnails where needed, and uploaded images have been embedded into the HTML.`;
             return output;
         }
 
