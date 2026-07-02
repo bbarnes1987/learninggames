@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Education Interactive Game Maker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #5b3293;
+            --secondary: #9c88c0;
+            --soft-bg: #f6f2fb;
+            --card-bg: #ffffff;
+            --ink: #1f2937;
+            --muted: #6b5a80;
+            --border: rgba(156, 136, 192, 0.35);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { min-height: 100%; }
+
+        body {
+            margin: 0;
+            font-family: 'Nunito', sans-serif;
+            color: var(--ink);
+            background: var(--soft-bg);
+            background-image:
+                radial-gradient(circle at 12px 12px, rgba(91, 50, 147, 0.08) 2px, transparent 0),
+                radial-gradient(circle at 36px 36px, rgba(156, 136, 192, 0.10) 2px, transparent 0);
+            background-size: 48px 48px;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: clamp(2rem, 6vw, 4.5rem) 1.25rem;
+            border-bottom: 6px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 14px 40px rgba(91, 50, 147, 0.22);
+        }
+
+        .wrap {
+            width: min(1100px, calc(100% - 2rem));
+            margin: 0 auto;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2.2rem, 6vw, 4.4rem);
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            margin: 0.75rem auto 0;
+            max-width: 760px;
+            font-size: clamp(1rem, 2.2vw, 1.35rem);
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.45;
+        }
+
+        main {
+            flex: 1;
+            padding: clamp(1.25rem, 4vw, 3rem) 0;
+        }
+
+        .section-card {
+            background: var(--card-bg);
+            border: 3px solid var(--border);
+            border-radius: 2rem;
+            padding: clamp(1.25rem, 3vw, 2rem);
+            box-shadow: 0 18px 45px rgba(91, 50, 147, 0.12);
+        }
+
+        .section-heading {
+            margin: 0;
+            color: #3f2368;
+            font-size: clamp(1.55rem, 3vw, 2.2rem);
+            font-weight: 900;
+            text-align: center;
+        }
+
+        .section-intro {
+            margin: 0.65rem auto 1.75rem;
+            max-width: 720px;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 800;
+            line-height: 1.45;
+        }
+
+        .game-links {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.1rem;
+        }
+
+        .game-button {
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            text-decoration: none;
+            text-align: center;
+            color: #3f2368;
+            background: #fbf9ff;
+            border: 3px solid rgba(156, 136, 192, 0.4);
+            border-radius: 1.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 10px 24px rgba(91, 50, 147, 0.10);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .game-button:hover,
+        .game-button:focus-visible {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 36px rgba(91, 50, 147, 0.18);
+            border-color: var(--primary);
+            background: #ffffff;
+            outline: none;
+        }
+
+        .game-button:active { transform: translateY(-1px); }
+
+        .icon {
+            width: 56px;
+            height: 56px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 1.75rem;
+            box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.18);
+        }
+
+        .button-title {
+            font-size: clamp(1.1rem, 2vw, 1.35rem);
+            font-weight: 900;
+            line-height: 1.15;
+        }
+
+        .button-help {
+            max-width: 250px;
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        footer {
+            padding: 1.25rem;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        @media (max-width: 840px) {
+            .game-links { grid-template-columns: 1fr; }
+            .game-button { min-height: 130px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="wrap hero">
+                <h1>Education Interactive Game Maker</h1>
+                <p class="subtitle">Create classroom-ready interactive games using simple teacher builder pages.</p>
+            </div>
+        </header>
+
+        <main>
+            <div class="wrap">
+                <section class="section-card" aria-labelledby="builder-links-heading">
+                    <h2 id="builder-links-heading" class="section-heading">Choose a game builder</h2>
+                    <p class="section-intro">Select the type of interactive activity you want to create.</p>
+
+                    <nav class="game-links" aria-label="Game builder links">
+                        <a class="game-button" href="TeacherCategorySort.html">
+                            <span class="icon" aria-hidden="true">🗂️</span>
+                            <span class="button-title">Create a Category Sort</span>
+                            <span class="button-help">Sort cards into the correct groups.</span>
+                        </a>
+
+                        <a class="game-button" href="TeacherMemoryMatch.html">
+                            <span class="icon" aria-hidden="true">🧩</span>
+                            <span class="button-title">Create a Match</span>
+                            <span class="button-help">Build a pairs or memory matching game.</span>
+                        </a>
+
+                        <a class="game-button" href="TeacherTimelineBuilder.html">
+                            <span class="icon" aria-hidden="true">⏳</span>
+                            <span class="button-title">Create a Timeline</span>
+                            <span class="button-help">Order events, stages or periods correctly.</span>
+                        </a>
+                    </nav>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            Place this file in the root website folder alongside the three teacher builder pages.
+        </footer>
+    </div>
+</body>
+</html>
