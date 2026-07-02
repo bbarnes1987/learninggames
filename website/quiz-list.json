@@ -25,6 +25,13 @@
       "updatedAt": "2026-07-02T15:55:14.688Z"
     },
     {
+      "title": "Mining - Mining Timeline Challenge",
+      "file": "mining-timeline-quiz.html",
+      "type": "timeline",
+      "category": "Mining",
+      "updatedAt": "2026-07-02T20:33:42.026Z"
+    },
+    {
       "title": "Toys Timeline Challenge! ⏳",
       "file": "toys-timeline-game.html",
       "type": "timeline",
@@ -37,5 +44,5 @@
       "updatedAt": "2026-07-02T20:21:23.335Z"
     }
   ],
-  "updatedAt": "2026-07-02T20:21:43.889Z"
+  "updatedAt": "2026-07-02T20:33:42.028Z"
 }
