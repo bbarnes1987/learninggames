@@ -902,9 +902,9 @@ ${lines.join(',\n')}
             };
         }
 
-        async function readQuizManifest(folderHandle) {
+        async function readQuizManifest(websiteRootHandle) {
             try {
-                const manifestHandle = await folderHandle.getFileHandle('quiz-list.json');
+                const manifestHandle = await websiteRootHandle.getFileHandle('quiz-list.json');
                 const manifestFile = await manifestHandle.getFile();
                 const manifestText = await manifestFile.text();
                 const parsed = JSON.parse(manifestText || '{}');
@@ -915,8 +915,8 @@ ${lines.join(',\n')}
             }
         }
 
-        async function updateQuizManifest(folderHandle, entry) {
-            const existingQuizzes = await readQuizManifest(folderHandle);
+        async function updateQuizManifest(websiteRootHandle, entry) {
+            const existingQuizzes = await readQuizManifest(websiteRootHandle);
             const withoutCurrent = existingQuizzes.filter(quiz => quiz.file !== entry.file);
             const quizzes = [...withoutCurrent, entry].sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
             const manifest = {
@@ -924,7 +924,7 @@ ${lines.join(',\n')}
                 updatedAt: new Date().toISOString()
             };
 
-            const manifestHandle = await folderHandle.getFileHandle('quiz-list.json', { create: true });
+            const manifestHandle = await websiteRootHandle.getFileHandle('quiz-list.json', { create: true });
             const writable = await manifestHandle.createWritable();
             await writable.write(JSON.stringify(manifest, null, 2));
             await writable.close();
@@ -958,23 +958,24 @@ ${lines.join(',\n')}
 
             if (!('showDirectoryPicker' in window)) {
                 downloadTextFile(text, fileName);
-                $('statusText').innerText = `Downloaded ${fileName}. Move it into your quizzes folder, then update quizzes/quiz-list.json.`;
+                $('statusText').innerText = `Downloaded ${fileName}. Move it into your quizzes folder, then update quiz-list.json in the root website folder.`;
                 return;
             }
 
             try {
-                $('statusText').innerText = 'Choose your existing quizzes folder...';
-                const selectedFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                $('statusText').innerText = 'Choose your website root folder, not the quizzes folder...';
+                const websiteRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
 
-                const fileHandle = await selectedFolderHandle.getFileHandle(fileName, { create: true });
+                const quizzesFolderHandle = await websiteRootHandle.getDirectoryHandle('quizzes', { create: true });
+                const fileHandle = await quizzesFolderHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(text);
                 await writable.close();
 
                 const manifestEntry = buildQuizManifestEntry(fileName, text);
-                await updateQuizManifest(selectedFolderHandle, manifestEntry);
+                await updateQuizManifest(websiteRootHandle, manifestEntry);
 
-                $('statusText').innerText = `Added ${fileName} and updated quiz-list.json.`;
+                $('statusText').innerText = `Added quizzes/${fileName} and updated quiz-list.json in the website root folder.`;
             } catch (error) {
                 if (error && error.name === 'AbortError') {
                     $('statusText').innerText = 'Add to website cancelled.';
@@ -983,7 +984,7 @@ ${lines.join(',\n')}
 
                 console.error(error);
                 downloadTextFile(text, fileName);
-                $('statusText').innerText = `Could not write directly to the folder. Downloaded ${fileName}; move it into quizzes and update quiz-list.json.`;
+                $('statusText').innerText = `Could not write directly to the website folder. Downloaded ${fileName}; move it into quizzes and update quiz-list.json in the root website folder.`;
             }
         }
 

@@ -296,7 +296,7 @@
 
                 <section class="section-card" aria-labelledby="created-quizzes-heading">
                     <h2 id="created-quizzes-heading" class="section-heading">Quizzes created</h2>
-                    <p class="section-intro">This section loads automatically from quizzes/quiz-list.json. Each button name comes from the title saved for that quiz.</p>
+                    <p class="section-intro">This section loads automatically from quiz-list.json in the root website folder. Each button name comes from the title saved for that quiz.</p>
 
                     <div class="quiz-toolbar">
                         <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose quizzes folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
@@ -304,19 +304,19 @@
                     </div>
 
                     <nav id="createdQuizzesGrid" class="game-links" aria-label="Created quiz links"></nav>
-                    <div id="quizStatus" class="status-box">Loading quizzes from quizzes/quiz-list.json...</div>
+                    <div id="quizStatus" class="status-box">Loading quizzes from quiz-list.json...</div>
                 </section>
             </div>
         </main>
 
         <footer>
-            Place this file in the root website folder. The quiz buttons load from quizzes/quiz-list.json.
+            Place this file in the root website folder. The quiz buttons load from quiz-list.json, and quiz files open from the quizzes folder.
         </footer>
     </div>
 
     <script>
         const QUIZ_FOLDER_NAME = 'quizzes';
-        const MANIFEST_PATH = `${QUIZ_FOLDER_NAME}/quiz-list.json`;
+        const MANIFEST_PATH = 'quiz-list.json';
         const SCAN_INTERVAL_MS = 10000;
 
         const createdQuizzesGrid = document.getElementById('createdQuizzesGrid');
@@ -425,7 +425,7 @@
             if (!selectedQuizzesFolderHandle) {
                 const loaded = await loadFromManifest();
                 if (!loaded && !createdQuizzesGrid.children.length) {
-                    setStatus('No quiz-list.json was found yet. On the published website, add quizzes/quiz-list.json. For local testing, click Choose quizzes folder and select the existing quizzes folder.', 'warning');
+                    setStatus('No quiz-list.json was found yet in the root website folder. Add the starter quiz-list.json next to index.html. For local testing, click Choose quizzes folder and select the existing quizzes folder.', 'warning');
                 }
                 return;
             }
@@ -457,7 +457,7 @@
 
         chooseQuizzesFolderButton.addEventListener('click', async () => {
             if (!window.showDirectoryPicker) {
-                setStatus('This browser does not support direct folder scanning. Use Chrome or Edge, or create quizzes/quiz-list.json for automatic hosted-site loading.', 'warning');
+                setStatus('This browser does not support direct folder scanning. Use Chrome or Edge, or create quiz-list.json for automatic hosted-site loading.', 'warning');
                 return;
             }
 
@@ -478,7 +478,7 @@
 
         loadFromManifest().then((loaded) => {
             if (!loaded) {
-                setStatus('No quiz-list.json was found yet. Add the starter quiz-list.json file into the quizzes folder, then add quizzes using the builder.', 'warning');
+                setStatus('No quiz-list.json was found yet. Add the starter quiz-list.json file next to index.html in the root website folder, then add quizzes using the builder.', 'warning');
             }
             startPeriodicScan();
         });
