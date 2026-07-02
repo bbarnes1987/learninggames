@@ -1,6 +1,13 @@
 {
   "quizzes": [
     {
+      "title": "Ancient Egypt - Timeline Challenge!",
+      "file": "ancient-egypt-timeline-quiz.html",
+      "type": "timeline",
+      "category": "Ancient Egypt",
+      "updatedAt": "2026-07-02T22:04:30.609Z"
+    },
+    {
       "title": "Anglo Saxon, Scots & Vikings - Timeline Challenge",
       "file": "anglo-saxon-scots-and-vikings-timeline-quiz.html",
       "type": "timeline",
@@ -32,6 +39,13 @@
       "updatedAt": "2026-07-02T15:55:14.688Z"
     },
     {
+      "title": "Maya Civilisation - Timeline Challenge!",
+      "file": "maya-civilisation-timeline-quiz.html",
+      "type": "timeline",
+      "category": "Maya Civilisation",
+      "updatedAt": "2026-07-02T22:13:42.032Z"
+    },
+    {
       "title": "Mining - Timeline Challenge",
       "file": "mining-timeline-quiz.html",
       "type": "timeline",
@@ -60,6 +74,13 @@
       "updatedAt": "2026-07-02T20:49:26.706Z"
     },
     {
+      "title": "The Tudorss - Timeline Challenge!",
+      "file": "the-tudorss-timeline-quiz.html",
+      "type": "timeline",
+      "category": "The Tudorss",
+      "updatedAt": "2026-07-02T22:09:33.843Z"
+    },
+    {
       "title": "Toys Timeline Challenge! ⏳",
       "file": "toys-timeline-game.html",
       "type": "timeline",
@@ -70,7 +91,14 @@
       "file": "victorians-timeline-quiz.html",
       "type": "timeline",
       "updatedAt": "2026-07-02T20:21:23.335Z"
+    },
+    {
+      "title": "World War II - Timeline Challenge!",
+      "file": "world-war-ii-timeline-quiz.html",
+      "type": "timeline",
+      "category": "World War II",
+      "updatedAt": "2026-07-02T22:18:59.584Z"
     }
   ],
-  "updatedAt": "2026-07-02T20:55:27.191Z"
+  "updatedAt": "2026-07-02T22:18:59.586Z"
 }
