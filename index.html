@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Timeline Game</title>
+    
+    <!-- Tailwind CSS for layout and styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--theme-page-bg, #f0fdf4);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* Theme colours controlled by teacherSettings at the top of the script. */
+        :root {
+            --theme-page-bg: #f0fdf4;
+            --theme-heading-bg: #059669;
+            --theme-heading-text: #ffffff;
+            --theme-heading-dark: #047857;
+            --theme-soft-bg: #d1fae5;
+            --theme-soft-border: #a7f3d0;
+        }
+
+        .app-header {
+            border-bottom-color: var(--theme-heading-bg) !important;
+        }
+
+        .game-title-text,
+        .win-title {
+            color: var(--theme-heading-dark) !important;
+        }
+
+        .score-pill {
+            background-color: var(--theme-soft-bg) !important;
+            color: var(--theme-heading-dark) !important;
+            border-color: var(--theme-soft-border) !important;
+        }
+
+
+        /* Cleaner two-row header layout */
+        .header-inner {
+            max-width: 72rem;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .header-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .title-block {
+            min-width: 0;
+        }
+
+        .header-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat-card {
+            background-color: var(--theme-soft-bg);
+            color: var(--theme-heading-dark);
+            border: 2px solid var(--theme-soft-border);
+            border-radius: 18px;
+            padding: 10px 14px;
+            min-height: 74px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.08);
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            line-height: 1;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.78;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.35rem;
+            line-height: 1.05;
+            font-weight: 900;
+        }
+
+        .stat-sub {
+            font-size: 0.8rem;
+            line-height: 1.1;
+            font-weight: 900;
+            margin-top: 5px;
+            opacity: 0.92;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .header-action-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .sound-toggle-button {
+            background-color: #ffffff !important;
+            color: var(--theme-heading-dark) !important;
+            border: 3px solid var(--theme-soft-border) !important;
+        }
+
+        .sound-toggle-button.sound-off {
+            opacity: 0.82;
+        }
+
+        .header-restart-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+            .header-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app-header {
+                padding: 12px !important;
+            }
+
+            .header-top-row {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-action-button,
+            .header-restart-button {
+                width: 100%;
+            }
+
+            .game-title-text {
+                font-size: 1.75rem !important;
+            }
+
+            .header-stats-grid {
+                gap: 8px;
+            }
+
+            .stat-card {
+                min-height: 66px;
+                padding: 8px 10px;
+                border-radius: 16px;
+            }
+
+            .stat-value {
+                font-size: 1.05rem;
+            }
+
+            .stat-sub {
+                font-size: 0.7rem;
+            }
+        }
+
+        .timeline-line {
+            background-color: var(--theme-soft-border) !important;
+        }
+
+        .timeline-slot:not(.occupied):hover {
+            background-color: var(--theme-soft-bg) !important;
+        }
+
+        .card-bank-title-bar,
+        .event-date,
+        .play-again-button,
+        .restart-button {
+            background-color: var(--theme-heading-bg) !important;
+            color: var(--theme-heading-text) !important;
+        }
+
+        .card-bank-title-text {
+            color: var(--theme-heading-text) !important;
+        }
+
+        .card-bank-panel {
+            background-color: var(--theme-soft-bg) !important;
+            border-color: var(--theme-heading-bg) !important;
+        }
+
+        .locked-in-timeline {
+            border-color: var(--theme-heading-bg) !important;
+        }
+
+        .emoji-fallback {
+            font-size: calc(var(--tl-img-size) * 0.45);
+            line-height: 1;
+        }
+
+        /* Dynamic timeline/card sizing
+           These variables are changed by JS depending on how many cards are in gameData. */
+        :root {
+            --tl-card-w: 130px;
+            --tl-card-h: 200px;
+            --tl-gap: 16px;
+            --tl-img-size: 80px;
+            --tl-icon-size: 24px;
+            --tl-text-size: 11px;
+            --tl-date-size: 14px;
+            --tl-category-size: 11px;
+            --tl-placeholder-size: 14px;
+            --tl-card-pad: 6px;
+            --tl-inner-gap: 6px;
+            --tl-date-pad-x: 8px;
+            --tl-border: 3px;
+            --tl-justify: center;
+        }
+
+        #timeline-slots,
+        #card-bank {
+            gap: var(--tl-gap) !important;
+        }
+
+        #timeline-slots {
+            justify-content: var(--tl-justify, center);
+            overflow-x: auto;
+            overflow-y: visible;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #timeline-slots.timeline-needs-scroll {
+            justify-content: flex-start !important;
+            cursor: grab;
+        }
+
+        #timeline-slots::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        #timeline-slots::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+
+        #timeline-slots::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .timeline-slot,
+        .draggable-card {
+            width: var(--tl-card-w) !important;
+            min-width: var(--tl-card-w) !important;
+            height: var(--tl-card-h) !important;
+            flex: 0 0 var(--tl-card-w) !important;
+        }
+
+        .timeline-slot:not(.occupied),
+        .draggable-card,
+        .portrait-frame {
+            border-width: var(--tl-border, 3px) !important;
+        }
+
+        .draggable-card {
+            padding: var(--tl-card-pad) !important;
+            min-height: var(--tl-card-h) !important;
+        }
+
+        .slot-placeholder {
+            font-size: var(--tl-placeholder-size) !important;
+            line-height: 1.15 !important;
+            overflow-wrap: break-word;
+        }
+
+        .slot-position-label {
+            font-size: calc(var(--tl-placeholder-size) * 0.72) !important;
+        }
+
+        .card-top-row {
+            margin-bottom: var(--tl-inner-gap) !important;
+            min-height: var(--tl-icon-size);
+        }
+
+        .card-icon {
+            width: var(--tl-icon-size) !important;
+            height: var(--tl-icon-size) !important;
+            border-width: var(--tl-border, 3px) !important;
+        }
+
+        .card-icon svg {
+            width: calc(var(--tl-icon-size) * 0.5) !important;
+            height: calc(var(--tl-icon-size) * 0.5) !important;
+        }
+
+        .category-text {
+            font-family: 'Nunito', sans-serif !important;
+            font-size: var(--tl-category-size) !important;
+            line-height: 1.05 !important;
+            min-width: 0;
+            overflow-wrap: break-word;
+        }
+
+        .event-date {
+            font-size: var(--tl-date-size) !important;
+            line-height: 1.05 !important;
+            margin-bottom: var(--tl-inner-gap) !important;
+            padding-left: var(--tl-date-pad-x) !important;
+            padding-right: var(--tl-date-pad-x) !important;
+            white-space: normal;
+        }
+
+        .portrait-frame {
+            width: var(--tl-img-size) !important;
+            height: var(--tl-img-size) !important;
+            margin-bottom: var(--tl-inner-gap) !important;
+        }
+
+        .event-text {
+            font-size: var(--tl-text-size) !important;
+            line-height: 1.05 !important;
+            min-height: 0;
+            width: 100%;
+            overflow: visible !important;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            text-wrap: balance;
+        }
+
+        /* Custom Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-2deg); }
+            40% { transform: translateX(8px) rotate(2deg); }
+            60% { transform: translateX(-8px) rotate(-2deg); }
+            80% { transform: translateX(8px) rotate(2deg); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes revealDate {
+            0% { transform: translateY(-10px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-date {
+            animation: revealDate 0.4s ease-out forwards;
+        }
+
+        /* Hide scrollbar */
+        .hide-scrollbar::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Game Header -->
+    <header class="app-header bg-white shadow-md p-4 sticky top-0 z-50 border-b-4 border-emerald-500">
+        <div class="header-inner">
+            <div class="header-top-row">
+                <div class="title-block">
+                    <h1 id="game-title" class="game-title-text text-3xl font-black text-emerald-700">Timeline Challenge! ⏳</h1>
+                    <p id="game-subtitle" class="text-gray-600 font-medium mt-1">Order the events of The Stuarts correctly.</p>
+                </div>
+                <div class="header-actions">
+                    <button id="sound-toggle-button" onclick="toggleSoundEffects()" class="sound-toggle-button header-action-button font-bold py-3 px-5 rounded-2xl text-lg shadow-md transition-transform hover:scale-105 active:scale-95" aria-pressed="false">
+                        🔇 Sound Off
+                    </button>
+                    <button id="start-again-button" onclick="location.reload()" class="restart-button header-restart-button header-action-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl text-lg shadow-lg transition-transform hover:scale-105 active:scale-95">
+                        Start Again
+                    </button>
+                </div>
+            </div>
+
+            <div class="header-stats-grid" aria-label="Game progress and scoring">
+                <div class="stat-card">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value"><span id="score-display">0</span> / <span id="total-display">0</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value" id="timer-display">0:00.0</span>
+                    <span class="stat-sub">Best: <span id="best-time-display">—</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value"><span id="mistake-display">0</span> mistakes</span>
+                    <span class="stat-sub">Penalty: +<span id="penalty-display">0:00.0</span></span>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-label">Difficulty</span>
+                    <span class="stat-value" id="difficulty-display">Choose</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 flex flex-col gap-6 mt-4">
+        
+        <!-- Timeline Section -->
+        <section class="w-full bg-white rounded-3xl p-6 shadow-xl border-4 border-gray-100 relative overflow-hidden">
+            <h2 id="timeline-heading" class="timeline-heading text-xl font-bold mb-4 text-center bg-gray-100 py-1 rounded-xl text-gray-700 uppercase tracking-widest">Chronological Order</h2>
+            
+            <div class="timeline-line absolute left-0 right-0 top-[60%] h-2 bg-gray-200 rounded-full z-0 hidden sm:block"></div>
+
+            <div id="timeline-slots" class="flex flex-row overflow-x-auto gap-4 relative z-10 pb-4 pt-1 snap-x items-center px-2">
+                <!-- Slots injected by JS -->
+            </div>
+        </section>
+
+        <!-- Card Bank -->
+        <section class="w-full">
+            <div class="card-bank-title-bar bg-emerald-600 rounded-t-3xl p-3 text-center">
+                <h2 id="event-bank-heading" class="card-bank-title-text text-xl font-bold text-white uppercase tracking-widest tracking-widest">Historical Events</h2>
+            </div>
+            <div class="card-bank-panel bg-emerald-50 rounded-b-3xl p-6 shadow-xl border-4 border-t-0 border-emerald-600 min-h-[300px]">
+                <div id="card-bank" class="flex flex-wrap justify-center gap-4">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Difficulty Selection Modal -->
+    <div id="difficulty-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[110] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-3xl w-full text-center shadow-2xl">
+            <div class="text-6xl mb-4">⏱️</div>
+            <h2 class="difficulty-title text-4xl font-black mb-2">Choose Your Difficulty</h2>
+            <p class="text-lg text-gray-600 mb-6">Pick how much date help players should receive during the timeline challenge.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="selectDifficulty('easy')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🟢</span>
+                    <span class="block text-2xl font-black text-gray-800">Easy</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates are visible from the start.</span>
+                </button>
+                <button onclick="selectDifficulty('normal')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🟡</span>
+                    <span class="block text-2xl font-black text-gray-800">Normal</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates appear after each correct placement.</span>
+                </button>
+                <button onclick="selectDifficulty('hard')" class="difficulty-button rounded-2xl border-4 border-gray-200 p-5 bg-gray-50 hover:bg-white shadow-md transition-transform hover:scale-105 active:scale-95 text-left">
+                    <span class="block text-3xl mb-2">🔴</span>
+                    <span class="block text-2xl font-black text-gray-800">Hard</span>
+                    <span class="block text-gray-600 font-bold mt-2">Dates stay hidden until the end.</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 max-w-md text-center transform scale-90 transition-transform duration-300 shadow-2xl" id="win-content">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 id="win-title" class="win-title text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
+            <p id="win-message" class="text-xl text-gray-600 mb-4">You have perfectly ordered the timeline of The Stuarts.</p>
+            <div id="final-time-summary" class="hidden bg-gray-100 rounded-2xl p-4 mb-6 text-gray-700 text-left">
+                <p class="text-base font-bold">Difficulty: <span id="final-difficulty">Normal</span></p>
+                <p class="text-base font-bold mt-1">Raw time: <span id="final-raw-time">0:00.0</span></p>
+                <p class="text-base font-bold mt-1">Mistakes: <span id="final-mistakes">0</span> × <span id="final-penalty-each">5s</span></p>
+                <p class="text-base font-bold mt-1">Accuracy penalty: +<span id="final-penalty">0:00.0</span></p>
+                <p class="text-xl font-black mt-3 text-center">Final score time: <span id="final-adjusted-time">0:00.0</span></p>
+                <p class="text-base font-bold mt-2 text-center">Best score: <span id="final-best-time">—</span></p>
+                <p id="new-best-message" class="hidden text-sm font-black mt-2 text-center">New best score!</p>
+            </div>
+            <button id="view-timeline-button" onclick="closeWinModal()" class="view-timeline-button bg-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full mb-3 border-4">
+                View Completed Timeline
+            </button>
+            <button id="play-again-button" onclick="location.reload()" class="play-again-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ==========================================
+         * 📝 TEACHER CONFIGURATION AREA 📝
+         * ==========================================
+         * Using the Google Drive Thumbnail service for maximum compatibility.
+         */
+        /*
+         * Quick settings for teachers
+         * ---------------------------
+         * This is the main section to edit.
+         *
+         * Colours must be hex colours, e.g. "#059669", "#2563eb", "#7c3aed".
+         *
+         * To change the topic shown on every card, edit categoryName once.
+         * The subtitle and win message will automatically use that same topic.
+         *
+         * cardsToUse cannot be higher than the number of cards in allGameCards.
+         * If you want 10 cards, allGameCards needs at least 10 card entries.
+         *
+         * wrongPlacementPenaltySeconds controls the accuracy penalty.
+         * Example: 5 means every incorrect drop adds 5 seconds to the final score time.
+         *
+         * Players choose their difficulty when the page opens:
+         * Easy = dates visible from the start
+         * Normal = dates visible after correct placement
+         * Hard = dates hidden until the end
+         *
+         * The Start Again button reloads the game but keeps the best score in this browser tab/window.
+         * soundEffectsOnByDefault controls whether sound starts on or off. Players can still toggle it in the header.
+         */
+        const teacherSettings = {
+            cardsToUse: 9,
+
+            // Main topic/category shown on every card
+            categoryName: "The Stuarts",
+
+            // Page/theme colours
+            backgroundColour: "#f0fdf4",
+            backgroundPatternColour: "#22c55e",
+            headingSectionColour: "#059669",
+            headingTextColour: "#ffffff",
+
+            // Accuracy scoring
+            // Each wrong placement adds this many seconds to the final score time.
+            wrongPlacementPenaltySeconds: 5,
+
+            // Optional sound effects
+            // false = starts muted, true = starts with sound on. Players can toggle this in the header.
+            soundEffectsOnByDefault: false,
+
+            // Wording shown around the game
+            gameTitle: "Timeline Challenge! ⏳",
+            timelineHeading: "Chronological Order",
+            eventBankHeading: "Historical Events"
+        };
+
+        /*
+         * Card library
+         * ------------
+         * Add extra cards here. Each card needs:
+         * sortYear: the order the computer uses
+         * displayDate: what children see after placing the card
+         * text: the event description
+         * image: optional image URL. Leave as "" to use an emoji placeholder.
+         * emoji: optional fallback if no image is provided
+         *
+         * The category is no longer written on every card.
+         * It is taken from teacherSettings.categoryName above.
+         *
+         * Tip: if two events happen in the same year, use decimals for sortYear,
+         * e.g. 1660.1 and 1660.2, so the game knows which one comes first.
+         */
+        const allGameCards = [
+            { sortYear: 1603, displayDate: "1603", text: "James I becomes King.", image: "https://drive.google.com/thumbnail?id=167CzaPg6Z_S1UbBE6R4DvQw9jBq6O_YC&sz=w220", emoji: "👑" },
+            { sortYear: 1604, displayDate: "1604", text: "Gunpowder Plot. Guy Fawkes attempts to kill James I.", image: "https://drive.google.com/thumbnail?id=1Uin2vza8qPurYXI5wFPM9iQq9slD1R3E&sz=w220", emoji: "💥" },
+            { sortYear: 1625, displayDate: "1625", text: "Charles I becomes King.", image: "https://drive.google.com/thumbnail?id=1DRo1U3rdf7_ie7-4CvY_ZQodoDC7GiQM&sz=w220", emoji: "👑" },
+            { sortYear: 1649, displayDate: "1649", text: "Oliver Cromwell becomes 'Lord Protector'.", image: "https://drive.google.com/thumbnail?id=1EU31ds2sI6mxH2DOArD0vIdr42RPGHAa&sz=w220", emoji: "⚔️" },
+            { sortYear: 1660.1, displayDate: "1660", text: "Charles II becomes King.", image: "https://drive.google.com/thumbnail?id=1Ji2t9BA-0itPQp8xibiylNWUflcoY67T&sz=w220", emoji: "👑" },
+            { sortYear: 1660.2, displayDate: "1660", text: "Samuel Pepys starts his diary.", image: "https://drive.google.com/thumbnail?id=1S-9PhvHPz0qg0V2L9Bvqk98cvZXV443A&sz=w220", emoji: "📖" },
+            { sortYear: 1664, displayDate: "1664 - 1665", text: "The Plague arrives in London.", image: "https://drive.google.com/thumbnail?id=11FNqRXDX7MvG6VDkFMv2NVLHUoRdWdEb&sz=w220", emoji: "🦠" },
+            { sortYear: 1666, displayDate: "1666", text: "The Great Fire of London.", image: "https://drive.google.com/thumbnail?id=1ub2WkGKA6uK5ADPKz9wN2esf_jAc4usN&sz=w220", emoji: "🔥" },
+            { sortYear: 1688, displayDate: "1688", text: "The Glorious Revolution.", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220", emoji: "🏰" },
+            { sortYear: 1707, displayDate: "1707", text: "The Act of Union creates Great Britain.", image: "", emoji: "🇬🇧" }
+        ];
+
+        function getGameData() {
+            const requestedCards = Number(teacherSettings.cardsToUse) || allGameCards.length;
+            const safeCardCount = Math.max(1, Math.min(requestedCards, allGameCards.length));
+
+            if (requestedCards > allGameCards.length) {
+                console.warn(`cardsToUse is set to ${requestedCards}, but only ${allGameCards.length} cards exist in allGameCards. Add more cards to allGameCards to increase the game.`);
+            }
+
+            return allGameCards.slice(0, safeCardCount).map(card => ({
+                ...card,
+                category: teacherSettings.categoryName
+            }));
+        }
+
+        const gameData = getGameData();
+
+        let eventsWithIds = [];
+        let score = 0;
+        let draggedCard = null;
+        let touchSelectedCard = null;
+
+        let timerStarted = false;
+        let timerFinished = false;
+        let timerStartMs = 0;
+        let timerIntervalId = null;
+        let bestTimeMs = null;
+        let wrongPlacements = 0;
+        let selectedDifficulty = null;
+        let soundEnabled = false;
+        let audioContext = null;
+
+        const difficultyOptions = {
+            easy: {
+                label: 'Easy',
+                description: 'Dates visible from the start'
+            },
+            normal: {
+                label: 'Normal',
+                description: 'Dates visible after correct placement'
+            },
+            hard: {
+                label: 'Hard',
+                description: 'Dates hidden until the end'
+            }
+        };
+
+        function textWithCategory(text) {
+            return String(text).replace(/\{category\}/g, teacherSettings.categoryName);
+        }
+
+        function normaliseHex(hex, fallback) {
+            const value = String(hex || '').trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
+            if (/^[0-9a-fA-F]{6}$/.test(value)) return `#${value}`;
+            return fallback;
+        }
+
+        function hexToRgb(hex) {
+            const safeHex = normaliseHex(hex, '#059669').slice(1);
+            return {
+                r: parseInt(safeHex.slice(0, 2), 16),
+                g: parseInt(safeHex.slice(2, 4), 16),
+                b: parseInt(safeHex.slice(4, 6), 16)
+            };
+        }
+
+        function rgbToHex({ r, g, b }) {
+            return `#${[r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+        }
+
+        function mixHex(hexA, hexB, amountOfB) {
+            const a = hexToRgb(hexA);
+            const b = hexToRgb(hexB);
+            return rgbToHex({
+                r: a.r + (b.r - a.r) * amountOfB,
+                g: a.g + (b.g - a.g) * amountOfB,
+                b: a.b + (b.b - a.b) * amountOfB
+            });
+        }
+
+        function createPlusPattern(patternColour) {
+            const encodedColour = encodeURIComponent(normaliseHex(patternColour, '#22c55e'));
+            return `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='${encodedColour}' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
+        }
+
+        function applyTeacherSettings() {
+            const root = document.documentElement;
+            const backgroundColour = normaliseHex(teacherSettings.backgroundColour, '#f0fdf4');
+            const patternColour = normaliseHex(teacherSettings.backgroundPatternColour || teacherSettings.headingSectionColour, '#22c55e');
+            const headingColour = normaliseHex(teacherSettings.headingSectionColour, '#059669');
+            const headingTextColour = normaliseHex(teacherSettings.headingTextColour, '#ffffff');
+            const headingDark = mixHex(headingColour, '#000000', 0.18);
+            const softBg = mixHex(headingColour, '#ffffff', 0.86);
+            const softBorder = mixHex(headingColour, '#ffffff', 0.68);
+
+            root.style.setProperty('--theme-page-bg', backgroundColour);
+            root.style.setProperty('--theme-heading-bg', headingColour);
+            root.style.setProperty('--theme-heading-text', headingTextColour);
+            root.style.setProperty('--theme-heading-dark', headingDark);
+            root.style.setProperty('--theme-soft-bg', softBg);
+            root.style.setProperty('--theme-soft-border', softBorder);
+
+            document.body.style.backgroundColor = backgroundColour;
+            document.body.style.backgroundImage = createPlusPattern(patternColour);
+            document.title = textWithCategory(teacherSettings.gameTitle || 'Historical Timeline Game');
+
+            document.getElementById('game-title').innerText = textWithCategory(teacherSettings.gameTitle);
+            document.getElementById('game-subtitle').innerText = `Order the events of ${teacherSettings.categoryName} correctly.`;
+            document.getElementById('timeline-heading').innerText = textWithCategory(teacherSettings.timelineHeading);
+            document.getElementById('event-bank-heading').innerText = textWithCategory(teacherSettings.eventBankHeading);
+            document.getElementById('win-title').innerText = 'Incredible!';
+            document.getElementById('win-message').innerText = `You have perfectly ordered the timeline of ${teacherSettings.categoryName}.`;
+            document.getElementById('play-again-button').innerText = 'Play Again';
+            document.getElementById('view-timeline-button').innerText = 'View Completed Timeline';
+
+            const newBestMessage = document.getElementById('new-best-message');
+            if (newBestMessage) newBestMessage.style.color = headingDark;
+
+            const viewTimelineButton = document.getElementById('view-timeline-button');
+            if (viewTimelineButton) {
+                viewTimelineButton.style.borderColor = headingColour;
+                viewTimelineButton.style.color = headingDark;
+            }
+        }
+
+        function clamp(min, value, max) {
+            return Math.max(min, Math.min(value, max));
+        }
+
+        function getSoundEffectsOnByDefault() {
+            return teacherSettings.soundEffectsOnByDefault === true;
+        }
+
+        function updateSoundToggleDisplay() {
+            const soundButton = document.getElementById('sound-toggle-button');
+            if (!soundButton) return;
+
+            soundButton.innerText = soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+            soundButton.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+            soundButton.classList.toggle('sound-off', !soundEnabled);
+        }
+
+        function toggleSoundEffects() {
+            soundEnabled = !soundEnabled;
+            updateSoundToggleDisplay();
+
+            if (soundEnabled) {
+                playSoundEffect('toggle');
+            }
+        }
+
+        function getAudioContext() {
+            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextConstructor) return null;
+
+            if (!audioContext) {
+                audioContext = new AudioContextConstructor();
+            }
+
+            return audioContext;
+        }
+
+        function playTone(context, frequency, startTime, duration, type = 'sine', volume = 0.08) {
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+
+            gain.gain.setValueAtTime(0.0001, startTime);
+            gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration + 0.03);
+        }
+
+        async function playSoundEffect(soundType) {
+            if (!soundEnabled) return;
+
+            const context = getAudioContext();
+            if (!context) return;
+
+            try {
+                if (context.state === 'suspended') {
+                    await context.resume();
+                }
+            } catch (error) {
+                return;
+            }
+
+            const now = context.currentTime;
+
+            if (soundType === 'correct') {
+                playTone(context, 660, now, 0.10, 'sine', 0.07);
+                playTone(context, 880, now + 0.08, 0.12, 'sine', 0.07);
+                return;
+            }
+
+            if (soundType === 'wrong') {
+                playTone(context, 190, now, 0.18, 'sawtooth', 0.06);
+                playTone(context, 130, now + 0.12, 0.18, 'sawtooth', 0.05);
+                return;
+            }
+
+            if (soundType === 'win') {
+                playTone(context, 523.25, now, 0.12, 'sine', 0.07);
+                playTone(context, 659.25, now + 0.11, 0.12, 'sine', 0.07);
+                playTone(context, 783.99, now + 0.22, 0.14, 'sine', 0.07);
+                playTone(context, 1046.50, now + 0.36, 0.20, 'sine', 0.07);
+                return;
+            }
+
+            // Toggle sound
+            playTone(context, 740, now, 0.10, 'sine', 0.06);
+        }
+
+        function getDifficultyLabel() {
+            return selectedDifficulty && difficultyOptions[selectedDifficulty]
+                ? difficultyOptions[selectedDifficulty].label
+                : 'Choose';
+        }
+
+        function updateDifficultyDisplay() {
+            const difficultyDisplay = document.getElementById('difficulty-display');
+            if (difficultyDisplay) difficultyDisplay.innerText = getDifficultyLabel();
+        }
+
+        function selectDifficulty(level) {
+            selectedDifficulty = difficultyOptions[level] ? level : 'normal';
+            updateDifficultyDisplay();
+            applyDifficultyModeToCards();
+            loadBestTime();
+
+            const difficultyModal = document.getElementById('difficulty-modal');
+            if (difficultyModal) difficultyModal.classList.add('hidden');
+
+            requestAnimationFrame(fitCardText);
+        }
+
+        function shouldDateBeVisibleBeforePlacement() {
+            return selectedDifficulty === 'easy';
+        }
+
+        function shouldRevealDateAfterCorrectPlacement() {
+            return selectedDifficulty === 'easy' || selectedDifficulty === 'normal';
+        }
+
+        function applyDifficultyModeToCards() {
+            const dateElements = document.querySelectorAll('.event-date');
+            dateElements.forEach(dateElement => {
+                if (shouldDateBeVisibleBeforePlacement()) {
+                    dateElement.classList.remove('hidden');
+                } else {
+                    dateElement.classList.add('hidden');
+                }
+            });
+        }
+
+        function revealAllDatesAtEnd() {
+            const dateElements = document.querySelectorAll('.event-date');
+            dateElements.forEach(dateElement => {
+                dateElement.classList.remove('hidden');
+                dateElement.classList.add('animate-date');
+            });
+            requestAnimationFrame(fitCardText);
+        }
+
+        function closeWinModal() {
+            const winModal = document.getElementById('win-modal');
+            if (winModal) winModal.classList.add('hidden');
+        }
+
+        function getWrongPlacementPenaltySeconds() {
+            const penaltySeconds = Number(teacherSettings.wrongPlacementPenaltySeconds);
+            return Number.isFinite(penaltySeconds) && penaltySeconds >= 0 ? penaltySeconds : 5;
+        }
+
+        function getCurrentPenaltyMs() {
+            return wrongPlacements * getWrongPlacementPenaltySeconds() * 1000;
+        }
+
+        function formatPenaltySecondsText(seconds) {
+            const rounded = Math.round(seconds * 10) / 10;
+            return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}s`;
+        }
+
+        function updateMistakeDisplay() {
+            const mistakeDisplay = document.getElementById('mistake-display');
+            const penaltyDisplay = document.getElementById('penalty-display');
+
+            if (mistakeDisplay) mistakeDisplay.innerText = wrongPlacements;
+            if (penaltyDisplay) penaltyDisplay.innerText = formatTime(getCurrentPenaltyMs());
+        }
+
+        function recordWrongPlacement() {
+            wrongPlacements++;
+            updateMistakeDisplay();
+        }
+
+        function getBestTimeStorageKey() {
+            // sessionStorage keeps this in the current browser tab/window, including after pressing Play Again.
+            // Closing the tab/window clears it.
+            // The best score is based on final score time: raw time + accuracy penalties.
+            const difficultyKey = selectedDifficulty || 'not-selected';
+            return `timeline-game-best-score:${teacherSettings.categoryName}:${gameData.length}:${difficultyKey}:${getWrongPlacementPenaltySeconds()}s`;
+        }
+
+        function getStoredBestTime() {
+            try {
+                const storedValue = sessionStorage.getItem(getBestTimeStorageKey());
+                const parsedValue = Number(storedValue);
+                return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function storeBestTime(milliseconds) {
+            try {
+                sessionStorage.setItem(getBestTimeStorageKey(), String(Math.round(milliseconds)));
+            } catch (error) {
+                // If the browser blocks sessionStorage, the best time still works until the page reloads.
+            }
+        }
+
+        function formatTime(milliseconds) {
+            const safeMilliseconds = Math.max(0, Math.floor(milliseconds || 0));
+            const totalTenths = Math.floor(safeMilliseconds / 100);
+            const tenths = totalTenths % 10;
+            const totalSeconds = Math.floor(totalTenths / 10);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${String(seconds).padStart(2, '0')}.${tenths}`;
+        }
+
+        function updateTimerDisplay(milliseconds) {
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) timerDisplay.innerText = formatTime(milliseconds);
+        }
+
+        function updateBestTimeDisplay() {
+            const displayText = bestTimeMs === null ? '—' : formatTime(bestTimeMs);
+            const bestDisplay = document.getElementById('best-time-display');
+            const finalBestDisplay = document.getElementById('final-best-time');
+
+            if (bestDisplay) bestDisplay.innerText = displayText;
+            if (finalBestDisplay) finalBestDisplay.innerText = displayText;
+        }
+
+        function loadBestTime() {
+            bestTimeMs = getStoredBestTime();
+            updateTimerDisplay(0);
+            updateMistakeDisplay();
+            updateBestTimeDisplay();
+        }
+
+        function startGameTimer() {
+            if (!selectedDifficulty || timerStarted || timerFinished) return;
+
+            timerStarted = true;
+            timerStartMs = performance.now();
+            updateTimerDisplay(0);
+
+            timerIntervalId = setInterval(() => {
+                updateTimerDisplay(performance.now() - timerStartMs);
+            }, 100);
+        }
+
+        function stopGameTimer() {
+            if (timerFinished) return;
+
+            timerFinished = true;
+            if (timerIntervalId) clearInterval(timerIntervalId);
+
+            const rawTimeMs = timerStarted ? performance.now() - timerStartMs : 0;
+            const penaltyMs = getCurrentPenaltyMs();
+            const adjustedTimeMs = rawTimeMs + penaltyMs;
+            const isNewBestTime = bestTimeMs === null || adjustedTimeMs < bestTimeMs;
+
+            updateTimerDisplay(rawTimeMs);
+            updateMistakeDisplay();
+
+            if (isNewBestTime) {
+                bestTimeMs = adjustedTimeMs;
+                storeBestTime(bestTimeMs);
+            }
+
+            updateBestTimeDisplay();
+            showFinalTime(rawTimeMs, penaltyMs, adjustedTimeMs, isNewBestTime);
+        }
+
+        function showFinalTime(rawTimeMs, penaltyMs, adjustedTimeMs, isNewBestTime) {
+            const finalSummary = document.getElementById('final-time-summary');
+            const finalDifficulty = document.getElementById('final-difficulty');
+            const finalRawTime = document.getElementById('final-raw-time');
+            const finalMistakes = document.getElementById('final-mistakes');
+            const finalPenaltyEach = document.getElementById('final-penalty-each');
+            const finalPenalty = document.getElementById('final-penalty');
+            const finalAdjustedTime = document.getElementById('final-adjusted-time');
+            const newBestMessage = document.getElementById('new-best-message');
+
+            if (finalDifficulty) finalDifficulty.innerText = getDifficultyLabel();
+            if (finalRawTime) finalRawTime.innerText = formatTime(rawTimeMs);
+            if (finalMistakes) finalMistakes.innerText = wrongPlacements;
+            if (finalPenaltyEach) finalPenaltyEach.innerText = formatPenaltySecondsText(getWrongPlacementPenaltySeconds());
+            if (finalPenalty) finalPenalty.innerText = formatTime(penaltyMs);
+            if (finalAdjustedTime) finalAdjustedTime.innerText = formatTime(adjustedTimeMs);
+            if (finalSummary) finalSummary.classList.remove('hidden');
+
+            if (newBestMessage) {
+                newBestMessage.classList.toggle('hidden', !isNewBestTime);
+            }
+        }
+
+        function updateTimelineTileSizing() {
+            const timelineContainer = document.getElementById('timeline-slots');
+            if (!timelineContainer) return;
+
+            const count = gameData.length;
+            if (count === 0) return;
+
+            // Original card size. The cards shrink while they remain readable.
+            // Once they reach the minimum readable size, the timeline becomes horizontally scrollable.
+            const originalWidth = 130;
+            const originalHeight = 200;
+            const minReadableWidth = 92;
+            const minReadableHeight = 160;
+
+            const gap = count <= 8 ? 16 : clamp(8, 16 - ((count - 8) * 1.25), 16);
+            const availableWidth = timelineContainer.clientWidth - (gap * (count - 1));
+
+            let width = Math.floor(availableWidth / count);
+            width = clamp(minReadableWidth, width, originalWidth);
+
+            const scale = width / originalWidth;
+            let height = Math.round(originalHeight * scale);
+            height = clamp(minReadableHeight, height, originalHeight);
+
+            const totalTimelineWidth = (width * count) + (gap * (count - 1));
+            const needsScroll = totalTimelineWidth > timelineContainer.clientWidth + 1;
+
+            timelineContainer.classList.toggle('timeline-needs-scroll', needsScroll);
+
+            // When scrolling is not needed, keep the line of cards centred.
+            // When scrolling is needed, align from the left so the first card is fully reachable.
+            document.documentElement.style.setProperty('--tl-justify', needsScroll ? 'flex-start' : 'center');
+            document.documentElement.style.setProperty('--tl-card-w', `${width}px`);
+            document.documentElement.style.setProperty('--tl-card-h', `${height}px`);
+            document.documentElement.style.setProperty('--tl-gap', `${gap}px`);
+            document.documentElement.style.setProperty('--tl-img-size', `${clamp(44, Math.round(80 * scale), 80)}px`);
+            document.documentElement.style.setProperty('--tl-icon-size', `${clamp(16, Math.round(24 * scale), 24)}px`);
+            document.documentElement.style.setProperty('--tl-text-size', `${clamp(8.5, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-date-size', `${clamp(9.5, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-category-size', `${clamp(8, 11 * scale, 11)}px`);
+            document.documentElement.style.setProperty('--tl-placeholder-size', `${clamp(9.5, 14 * scale, 14)}px`);
+            document.documentElement.style.setProperty('--tl-card-pad', `${clamp(4, Math.round(6 * scale), 6)}px`);
+            document.documentElement.style.setProperty('--tl-inner-gap', `${clamp(2, Math.round(6 * scale), 6)}px`);
+            document.documentElement.style.setProperty('--tl-date-pad-x', `${clamp(3, Math.round(8 * scale), 8)}px`);
+            document.documentElement.style.setProperty('--tl-border', width < 105 ? '2px' : '3px');
+
+            requestAnimationFrame(fitCardText);
+        }
+
+        function fitCardText() {
+            const textBlocks = document.querySelectorAll('.event-text');
+            if (!textBlocks.length) return;
+
+            const rootStyles = getComputedStyle(document.documentElement);
+            const baseSize = parseFloat(rootStyles.getPropertyValue('--tl-text-size')) || 11;
+            const minSize = 7.5;
+
+            textBlocks.forEach(textBlock => {
+                textBlock.style.fontSize = `${baseSize}px`;
+                textBlock.style.lineHeight = '1.05';
+                textBlock.style.overflowY = 'visible';
+
+                // If a longer event still does not fit, reduce just that card's text a little more.
+                // This prevents text being chopped off when the date is revealed in the timeline.
+                let size = baseSize;
+                while (textBlock.scrollHeight > textBlock.clientHeight && size > minSize) {
+                    size -= 0.25;
+                    textBlock.style.fontSize = `${size}px`;
+                }
+
+                // Extremely long descriptions are still readable rather than being cut off.
+                if (textBlock.scrollHeight > textBlock.clientHeight) {
+                    textBlock.style.overflowY = 'auto';
+                }
+            });
+        }
+
+        function initGame() {
+            applyTeacherSettings();
+            soundEnabled = getSoundEffectsOnByDefault();
+            updateSoundToggleDisplay();
+            bestTimeMs = null;
+            updateTimerDisplay(0);
+            updateMistakeDisplay();
+            updateBestTimeDisplay();
+            updateDifficultyDisplay();
+            document.getElementById('total-display').innerText = gameData.length;
+            eventsWithIds = gameData.map((item, index) => ({ ...item, id: `event-${index}` }));
+
+            const sortedEvents = [...eventsWithIds].sort((a, b) => a.sortYear - b.sortYear);
+            const timelineContainer = document.getElementById('timeline-slots');
+            
+            sortedEvents.forEach((ev, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'timeline-slot relative bg-gray-50 border-[3px] border-dashed border-gray-300 rounded-xl flex-shrink-0 snap-center flex items-center justify-center transition-all duration-300 cursor-pointer hover:bg-emerald-50';
+                slot.setAttribute('data-target-id', ev.id);
+                slot.innerHTML = `<div class="slot-placeholder text-gray-400 font-bold pointer-events-none px-1 text-center"><span class="slot-position-label block uppercase mb-1">Position ${index + 1}</span>Drop Here</div>`;
+                timelineContainer.appendChild(slot);
+            });
+
+            updateTimelineTileSizing();
+
+            const shuffledEvents = [...eventsWithIds].sort(() => Math.random() - 0.5);
+            const bankContainer = document.getElementById('card-bank');
+            
+            shuffledEvents.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = 'draggable-card bg-white border-[3px] border-gray-600 rounded-xl cursor-grab text-center shadow-md transition-all hover:scale-105 active:scale-95 animate-pop flex flex-col items-center justify-between flex-shrink-0';
+                card.draggable = true;
+                card.setAttribute('data-id', ev.id);
+
+                card.innerHTML = `
+                    <div class="card-top-row flex w-full items-center justify-start gap-1 pointer-events-none">
+                        <div class="card-icon rounded-full border-2 border-gray-600 flex items-center justify-center bg-gray-600 text-white shadow-inner flex-shrink-0">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-10 9h3v11h14v-11h3l-10-9zm0 4.5c1.5 2 3 4 3 6.5 0 2.5-1.5 4-3 5.5-1.5-1.5-3-3-3-5.5 0-2.5 1.5-4.5 3-6.5z"/></svg>
+                        </div>
+                        <span class="category-text font-bold text-gray-700 leading-tight text-left">${ev.category}</span>
+                    </div>
+                    
+                    <div class="event-date hidden bg-emerald-600 text-white font-black px-2 py-0.5 rounded mb-1.5 shadow w-full">${ev.displayDate}</div>
+                    
+                    <!-- Portrait Frame: image if provided, otherwise emoji fallback -->
+                    <div class="portrait-frame rounded-full border-[3px] border-gray-600 mb-1.5 shadow-sm bg-white flex-shrink-0 flex items-center justify-center overflow-hidden relative">
+                        ${ev.image ? `<img src="${ev.image}" 
+                             class="w-full h-full object-cover relative z-10 scale-[1.6]" 
+                             loading="lazy"
+                             onerror="this.style.display='none'; this.parentElement.querySelector('.emoji-fallback').classList.remove('hidden');">` : ''}
+                        <span class="emoji-fallback ${ev.image ? 'hidden' : ''}">${ev.emoji || '🏛️'}</span>
+                    </div>
+                    
+                    <p class="event-text font-bold text-gray-800 flex-grow flex items-center justify-center overflow-hidden">${ev.text}</p>
+                `;
+                
+                bankContainer.appendChild(card);
+            });
+
+            updateTimelineTileSizing();
+            setupInteractions();
+        }
+
+        function setupInteractions() {
+            const cards = document.querySelectorAll('.draggable-card');
+            const slots = document.querySelectorAll('.timeline-slot');
+
+            cards.forEach(card => {
+                card.addEventListener('pointerdown', () => {
+                    if (!card.classList.contains('locked-in-timeline')) startGameTimer();
+                });
+                card.addEventListener('dragstart', (e) => {
+                    startGameTimer();
+                    draggedCard = card;
+                    if (e.dataTransfer) e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+                    card.classList.add('opacity-50');
+                    clearTouchSelection(cards);
+                });
+                card.addEventListener('dragend', () => { card.classList.remove('opacity-50'); draggedCard = null; });
+                card.addEventListener('click', () => {
+                    if (card.classList.contains('locked-in-timeline')) return;
+                    startGameTimer();
+                    if (touchSelectedCard === card) { clearTouchSelection(cards); } 
+                    else { clearTouchSelection(cards); touchSelectedCard = card; card.classList.add('ring-8', 'ring-blue-400'); }
+                });
+            });
+
+            slots.forEach(slot => {
+                slot.addEventListener('dragover', (e) => e.preventDefault());
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedCard) attemptPlacement(draggedCard, slot);
+                });
+                slot.addEventListener('click', () => {
+                    if (touchSelectedCard && !slot.classList.contains('occupied')) {
+                        attemptPlacement(touchSelectedCard, slot);
+                        clearTouchSelection(cards);
+                    }
+                });
+            });
+        }
+
+        function clearTouchSelection(cards) {
+            touchSelectedCard = null;
+            cards.forEach(c => c.classList.remove('ring-8', 'ring-blue-400'));
+        }
+
+        function attemptPlacement(card, slot) {
+            if (card.getAttribute('data-id') === slot.getAttribute('data-target-id')) {
+                slot.querySelector('.slot-placeholder').style.display = 'none';
+                slot.classList.add('occupied', 'bg-transparent', 'border-0');
+                card.draggable = false;
+                card.classList.add('locked-in-timeline', 'border-emerald-500', 'cursor-default');
+                const dateElement = card.querySelector('.event-date');
+                if (dateElement && shouldRevealDateAfterCorrectPlacement()) {
+                    dateElement.classList.remove('hidden');
+                    dateElement.classList.add('animate-date');
+                }
+                slot.appendChild(card);
+                requestAnimationFrame(fitCardText);
+                score++;
+                document.getElementById('score-display').innerText = score;
+                if (score === gameData.length) {
+                    if (selectedDifficulty === 'hard') revealAllDatesAtEnd();
+                    stopGameTimer();
+                    playSoundEffect('win');
+                    document.getElementById('win-modal').classList.remove('hidden');
+                    document.getElementById('win-content').classList.add('scale-100');
+                    fireConfetti();
+                } else {
+                    playSoundEffect('correct');
+                }
+            } else {
+                recordWrongPlacement();
+                playSoundEffect('wrong');
+                card.classList.add('animate-shake', 'border-red-500');
+                setTimeout(() => card.classList.remove('animate-shake', 'border-red-500'), 400);
+            }
+        }
+
+        function fireConfetti() {
+            const themeColour = normaliseHex(teacherSettings.headingSectionColour, '#059669');
+            const colors = [themeColour, '#fcd34d', '#f87171', '#60a5fa'];
+            for (let i = 0; i < 50; i++) {
+                const c = document.createElement('div');
+                c.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-20px;width:10px;height:10px;background:${colors[Math.floor(Math.random()*colors.length)]};z-index:200;pointer-events:none;`;
+                document.body.appendChild(c);
+                c.animate([{transform:'translateY(0) rotate(0deg)',opacity:1},{transform:`translateY(100vh) rotate(${Math.random()*360}deg)`,opacity:0}], {duration: 2000, fill:'forwards'});
+                setTimeout(()=>c.remove(), 2000);
+            }
+        }
+
+        window.addEventListener('resize', updateTimelineTileSizing);
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
