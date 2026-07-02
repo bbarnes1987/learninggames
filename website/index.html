@@ -301,6 +301,7 @@
                     <div class="quiz-toolbar">
                         <button class="tool-button" id="chooseQuizzesFolderButton" type="button">Choose website folder <span style="font-size:0.82em;opacity:0.8;">local test</span></button>
                         <button class="tool-button secondary" id="refreshQuizzesButton" type="button">Refresh quizzes</button>
+                        <button class="tool-button secondary" id="rebuildManifestButton" type="button">Rebuild quiz list from folder</button>
                     </div>
 
                     <nav id="createdQuizzesGrid" class="game-links" aria-label="Created quiz links"></nav>
@@ -323,6 +324,7 @@
         const quizStatus = document.getElementById('quizStatus');
         const chooseQuizzesFolderButton = document.getElementById('chooseQuizzesFolderButton');
         const refreshQuizzesButton = document.getElementById('refreshQuizzesButton');
+        const rebuildManifestButton = document.getElementById('rebuildManifestButton');
 
         let selectedWebsiteFolderHandle = null;
         let scanTimer = null;
@@ -337,6 +339,17 @@
             try {
                 const doc = new DOMParser().parseFromString(html, 'text/html');
                 const title = (doc.querySelector('title')?.textContent || '').trim();
+                const h1 = (doc.querySelector('h1')?.textContent || '').trim();
+                const genericTitles = [
+                    'Historical Timeline Game',
+                    'Timeline Game',
+                    'Match the Pairs Game',
+                    'Memory Match Game',
+                    'Category Sort Game'
+                ];
+
+                if (title && !genericTitles.includes(title)) return title;
+                if (h1) return h1;
                 return title || fallback;
             } catch (error) {
                 const match = String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i);
@@ -445,6 +458,80 @@
             }
         }
 
+        function inferQuizType(fileName, title) {
+            const text = `${fileName} ${title}`.toLowerCase();
+            if (text.includes('timeline')) return 'timeline';
+            if (text.includes('memory')) return 'memory-match';
+            if (text.includes('matching') || text.includes('match')) return 'match';
+            if (text.includes('sort') || text.includes('category')) return 'category-sort';
+            return 'quiz';
+        }
+
+        async function ensureReadWritePermission(directoryHandle) {
+            if (!directoryHandle.requestPermission) return true;
+            const options = { mode: 'readwrite' };
+            if ((await directoryHandle.queryPermission(options)) === 'granted') return true;
+            return (await directoryHandle.requestPermission(options)) === 'granted';
+        }
+
+        async function chooseWebsiteRootFolderForWriting() {
+            if (!window.showDirectoryPicker) {
+                throw new Error('This browser does not support direct folder access. Use Chrome or Edge.');
+            }
+
+            const folderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            const hasPermission = await ensureReadWritePermission(folderHandle);
+            if (!hasPermission) throw new Error('Permission to update quiz-list.json was not granted.');
+
+            await folderHandle.getFileHandle('index.html', { create: false });
+            await folderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+            return folderHandle;
+        }
+
+        async function rebuildManifestFromQuizzesFolder() {
+            try {
+                setStatus('Choose the main website folder. I will scan the quizzes folder and rebuild quiz-list.json...', 'warning');
+                const websiteFolderHandle = await chooseWebsiteRootFolderForWriting();
+                selectedWebsiteFolderHandle = websiteFolderHandle;
+
+                const quizzesFolderHandle = await websiteFolderHandle.getDirectoryHandle(QUIZ_FOLDER_NAME, { create: false });
+                const quizzes = [];
+
+                for await (const [fileName, entryHandle] of quizzesFolderHandle.entries()) {
+                    if (entryHandle.kind !== 'file' || !/\.html?$/i.test(fileName)) continue;
+
+                    const file = await entryHandle.getFile();
+                    const html = await file.text();
+                    const title = titleFromHtml(html, tidyTitleFromFilename(fileName));
+
+                    quizzes.push({
+                        title,
+                        file: fileName,
+                        type: inferQuizType(fileName, title),
+                        updatedAt: new Date(file.lastModified || Date.now()).toISOString()
+                    });
+                }
+
+                quizzes.sort((a, b) => a.title.localeCompare(b.title));
+
+                const manifest = {
+                    quizzes,
+                    updatedAt: new Date().toISOString()
+                };
+
+                const manifestHandle = await websiteFolderHandle.getFileHandle(MANIFEST_PATH, { create: true });
+                const writable = await manifestHandle.createWritable();
+                await writable.write(JSON.stringify(manifest, null, 2));
+                await writable.close();
+
+                renderQuizzes(quizzes.map(quiz => ({ ...quiz, href: safeRelativeQuizHref(quiz.file) })), 'the rebuilt quiz-list.json');
+                setStatus(`Rebuilt quiz-list.json with ${quizzes.length} quiz${quizzes.length === 1 ? '' : 'zes'}.`, 'success');
+                startPeriodicScan();
+            } catch (error) {
+                setStatus(error.message || 'Could not rebuild quiz-list.json. Choose the main website folder that contains index.html and the quizzes folder.', 'warning');
+            }
+        }
+
         async function refreshQuizzes() {
             latestRenderedSignature = '';
 
@@ -486,6 +573,7 @@
         });
 
         refreshQuizzesButton.addEventListener('click', refreshQuizzes);
+        rebuildManifestButton.addEventListener('click', rebuildManifestFromQuizzesFolder);
 
         refreshQuizzes().then(startPeriodicScan);
     </script>
