@@ -253,6 +253,13 @@
             text-align: center;
         }
 
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #b8b8b8;
+            opacity: 1;
+        }
+
         @media (max-width: 760px) {
             .form-grid, .form-grid.three {
                 grid-template-columns: 1fr;
@@ -269,7 +276,7 @@
     <header>
         <div class="wrap">
             <h1>Timeline Game Builder</h1>
-            <p class="lead">Fill in the settings and card details, then generate a ready-to-copy version of the timeline game. Teachers only need this page; they do not need to edit the 1000+ lines of game code directly.</p>
+            <p class="lead">Fill in the settings and card details, then generate a ready-to-copy version of the timeline game.</p>
         </div>
     </header>
 
@@ -282,23 +289,23 @@
                 <div class="form-grid">
                     <div class="field">
                         <label for="categoryName">Category name</label>
-                        <input id="categoryName" type="text" value="The Stuarts">
+                        <input id="categoryName" type="text" placeholder="e.g. The Stuarts">
                         <div class="hint">This appears on every card and in the game instructions.</div>
                     </div>
 
                     <div class="field">
                         <label for="gameTitle">Game title</label>
-                        <input id="gameTitle" type="text" value="Timeline Challenge! ⏳">
+                        <input id="gameTitle" type="text" placeholder="e.g. Timeline Challenge! ⏳">
                     </div>
 
                     <div class="field">
                         <label for="timelineHeading">Timeline heading</label>
-                        <input id="timelineHeading" type="text" value="Chronological Order">
+                        <input id="timelineHeading" type="text" placeholder="e.g. Chronological Order">
                     </div>
 
                     <div class="field">
                         <label for="eventBankHeading">Event bank heading</label>
-                        <input id="eventBankHeading" type="text" value="Historical Events">
+                        <input id="eventBankHeading" type="text" placeholder="e.g. Historical Events">
                     </div>
                 </div>
 
@@ -348,7 +355,15 @@
                 <div class="card-toolbar">
                     <div class="field card-count-box">
                         <label for="cardCount">Number of cards</label>
-                        <input id="cardCount" type="number" min="1" max="40" step="1" value="9">
+                        <select id="cardCount">
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9" selected>9</option>
+                            <option value="10">10</option>
+                        </select>
                     </div>
                     <div class="hint">Paste a Google Drive share link for each image. The builder will automatically convert it into the correct thumbnail link. Blank images use a scroll emoji placeholder.</div>
                 </div>
@@ -389,7 +404,11 @@
             { year: "1688", text: "The Glorious Revolution.", image: "https://drive.google.com/thumbnail?id=1pUegrT9BW8_k9m-1zcL-JQ9b2AJ4v6oe&sz=w220" }
         ];
 
-        let cardData = [...sampleCards];
+        const MIN_CARDS = 4;
+        const MAX_CARDS = 10;
+        const DEFAULT_CARD_COUNT = 9;
+
+        let cardData = Array.from({ length: DEFAULT_CARD_COUNT }, () => ({ year: '', text: '', image: '' }));
 
         const $ = (id) => document.getElementById(id);
 
@@ -401,6 +420,15 @@
 
         function jsString(value) {
             return JSON.stringify(String(value ?? '').trim());
+        }
+
+        function textOrDefault(id, fallback) {
+            const value = ($(id)?.value || '').trim();
+            return value || fallback;
+        }
+
+        function clampCardCount(value) {
+            return Math.max(MIN_CARDS, Math.min(MAX_CARDS, Number(value) || DEFAULT_CARD_COUNT));
         }
 
         function normaliseHex(value, fallback) {
@@ -431,7 +459,7 @@
         }
 
         function collectCardsFromForm() {
-            const count = Math.max(1, Math.min(40, Number($('cardCount').value) || 1));
+            const count = clampCardCount($('cardCount').value);
             const collected = [];
 
             for (let i = 0; i < count; i++) {
@@ -448,11 +476,10 @@
 
         function resizeCardData(newCount) {
             collectCardsFromForm();
-            const safeCount = Math.max(1, Math.min(40, Number(newCount) || 1));
+            const safeCount = clampCardCount(newCount);
 
             while (cardData.length < safeCount) {
-                const nextSample = sampleCards[cardData.length];
-                cardData.push(nextSample ? { ...nextSample } : { year: '', text: '', image: '' });
+                cardData.push({ year: '', text: '', image: '' });
             }
 
             if (cardData.length > safeCount) {
@@ -465,6 +492,11 @@
             list.innerHTML = '';
 
             cardData.forEach((card, index) => {
+                const example = sampleCards[index] || {
+                    year: '1714',
+                    text: 'A key event happens.',
+                    image: 'https://drive.google.com/file/d/FILE_ID/view?usp=drive_link'
+                };
                 const panel = document.createElement('div');
                 panel.className = 'card-editor';
                 panel.innerHTML = `
@@ -472,11 +504,11 @@
                     <div class="form-grid three">
                         <div class="field">
                             <label for="cardYear-${index}">Year / date shown</label>
-                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. 1066">
+                            <input id="cardYear-${index}" type="text" value="${escapeAttribute(card.year)}" placeholder="e.g. ${escapeAttribute(example.year)}">
                         </div>
                         <div class="field full">
                             <label for="cardText-${index}">Event text</label>
-                            <textarea id="cardText-${index}" placeholder="What happened?">${escapeHtml(card.text)}</textarea>
+                            <textarea id="cardText-${index}" placeholder="e.g. ${escapeAttribute(example.text)}">${escapeHtml(card.text)}</textarea>
                         </div>
                         <div class="field full">
                             <label for="cardImage-${index}">Image link</label>
@@ -487,6 +519,8 @@
                 `;
                 list.appendChild(panel);
             });
+
+            activateClickToClearPlaceholders();
         }
 
         function escapeHtml(value) {
@@ -517,7 +551,7 @@
             cardsToUse: ${cardsCount},
 
             // Main topic/category shown on every card
-            categoryName: ${jsString($('categoryName').value)},
+            categoryName: ${jsString(textOrDefault('categoryName', 'The Stuarts'))},
 
             // Page/theme colours
             backgroundColour: ${jsString(normaliseHex($('backgroundColour').value, '#f7f3ff'))},
@@ -531,9 +565,9 @@
             soundEffectsOnByDefault: ${soundOn},
 
             // Wording shown around the game
-            gameTitle: ${jsString($('gameTitle').value)},
-            timelineHeading: ${jsString($('timelineHeading').value)},
-            eventBankHeading: ${jsString($('eventBankHeading').value)}
+            gameTitle: ${jsString(textOrDefault('gameTitle', 'Timeline Challenge! ⏳'))},
+            timelineHeading: ${jsString(textOrDefault('timelineHeading', 'Chronological Order'))},
+            eventBankHeading: ${jsString(textOrDefault('eventBankHeading', 'Historical Events'))}
         };`;
         }
 
@@ -611,7 +645,7 @@ ${lines.join(',\n')}
             const text = $('outputCode').value || generateGameCode();
             if (!text) return;
 
-            const category = ($('categoryName').value || 'timeline-game')
+            const category = (textOrDefault('categoryName', 'timeline-game'))
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-+|-+$/g, '') || 'timeline-game';
@@ -639,10 +673,29 @@ ${lines.join(',\n')}
             $('headingPreview').style.color = text;
         }
 
+        function activateClickToClearPlaceholders() {
+            document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach((field) => {
+                if (field.dataset.placeholderReady === 'true') return;
+                field.dataset.placeholderReady = 'true';
+                field.dataset.originalPlaceholder = field.getAttribute('placeholder') || '';
+
+                field.addEventListener('focus', () => {
+                    field.setAttribute('placeholder', '');
+                });
+
+                field.addEventListener('blur', () => {
+                    if (!field.value.trim()) {
+                        field.setAttribute('placeholder', field.dataset.originalPlaceholder || '');
+                    }
+                });
+            });
+        }
+
         function init() {
+            $('cardCount').value = String(DEFAULT_CARD_COUNT);
             renderCardFields();
             updateColourPreview();
-            generateGameCode();
+            activateClickToClearPlaceholders();
 
             $('cardCount').addEventListener('change', () => {
                 resizeCardData($('cardCount').value);
