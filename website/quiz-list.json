@@ -1,7 +1,7 @@
 {
   "quizzes": [
     {
-      "title": "Anglo Saxon, Scots & Vikings - Anglo Saxon, Scots & Vikings Timeline Challenge",
+      "title": "Anglo Saxon, Scots & Vikings - Timeline Challenge",
       "file": "anglo-saxon-scots-and-vikings-timeline-quiz.html",
       "type": "timeline",
       "category": "Anglo Saxon, Scots & Vikings",
@@ -32,28 +32,28 @@
       "updatedAt": "2026-07-02T15:55:14.688Z"
     },
     {
-      "title": "Mining - Mining Timeline Challenge",
+      "title": "Mining - Timeline Challenge",
       "file": "mining-timeline-quiz.html",
       "type": "timeline",
       "category": "Mining",
       "updatedAt": "2026-07-02T20:33:42.026Z"
     },
     {
-      "title": "Roman Empire & Britain - Roman Empire & Britain Timeline Challenge",
+      "title": "Roman Empire & Britain - Timeline Challenge",
       "file": "roman-empire-and-britain-timeline-quiz.html",
       "type": "timeline",
       "category": "Roman Empire & Britain",
       "updatedAt": "2026-07-02T20:41:59.656Z"
     },
     {
-      "title": "Stone Age - Iron Age - Stone Age - Iron Age Timeline Challenge",
+      "title": "Stone Age - Iron Age - Timeline Challenge",
       "file": "stone-age-iron-age-timeline-quiz.html",
       "type": "timeline",
       "category": "Stone Age - Iron Age",
       "updatedAt": "2026-07-02T20:44:35.163Z"
     },
     {
-      "title": "The Greeks - The Greeks Timeline Challenge",
+      "title": "The Greeks - Timeline Challenge",
       "file": "the-greeks-timeline-quiz.html",
       "type": "timeline",
       "category": "The Greeks",
@@ -66,7 +66,7 @@
       "updatedAt": "2026-07-02T19:57:52.930Z"
     },
     {
-      "title": "Victorians - Victorians Timeline Challenge",
+      "title": "Victorians - Timeline Challenge",
       "file": "victorians-timeline-quiz.html",
       "type": "timeline",
       "updatedAt": "2026-07-02T20:21:23.335Z"
