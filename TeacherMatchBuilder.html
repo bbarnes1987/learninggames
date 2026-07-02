@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match the Pairs Game Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --builder-primary: #5b3293;
+            --builder-secondary: #9c88c0;
+            --builder-bg: #f6f2fb;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--builder-bg);
+            background-image:
+                radial-gradient(circle at 12px 12px, rgba(91, 50, 147, 0.08) 2px, transparent 0),
+                radial-gradient(circle at 36px 36px, rgba(156, 136, 192, 0.10) 2px, transparent 0);
+            background-size: 48px 48px;
+        }
+        .builder-gradient {
+            background: linear-gradient(135deg, var(--builder-primary), var(--builder-secondary));
+        }
+        .builder-card {
+            background: white;
+            border: 3px solid rgba(156, 136, 192, 0.28);
+            box-shadow: 0 18px 45px rgba(91, 50, 147, 0.11);
+        }
+        .field-label {
+            font-weight: 900;
+            color: #3f2368;
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+        .field-help {
+            color: #6b5a80;
+            font-size: 0.86rem;
+            line-height: 1.25rem;
+            margin-top: 0.3rem;
+        }
+        .input-field,
+        .select-field,
+        .textarea-field {
+            width: 100%;
+            border: 2px solid rgba(156, 136, 192, 0.45);
+            border-radius: 1rem;
+            padding: 0.8rem 0.95rem;
+            outline: none;
+            background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 700;
+        }
+        .textarea-field { min-height: 88px; resize: vertical; }
+        .input-field:focus,
+        .select-field:focus,
+        .textarea-field:focus {
+            border-color: var(--builder-primary);
+            box-shadow: 0 0 0 4px rgba(91, 50, 147, 0.13);
+        }
+        ::placeholder { color: #aaa0b8; opacity: 1; font-weight: 600; }
+        .btn-primary {
+            background: var(--builder-primary);
+            color: white;
+            font-weight: 900;
+            border-radius: 999px;
+            padding: 0.85rem 1.35rem;
+            box-shadow: 0 10px 22px rgba(91, 50, 147, 0.22);
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-secondary {
+            background: #eee7f7;
+            color: #3f2368;
+            font-weight: 900;
+            border-radius: 999px;
+            padding: 0.85rem 1.35rem;
+            border: 2px solid rgba(91, 50, 147, 0.16);
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .btn-secondary:hover { filter: brightness(0.98); transform: translateY(-1px); }
+        .pair-card {
+            border: 3px solid rgba(156, 136, 192, 0.30);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            background: #fbf9ff;
+        }
+        .pair-heading {
+            background: #eee7f7;
+            color: #3f2368;
+        }
+        .tile-config {
+            background: #fff;
+            border: 2px dashed rgba(156, 136, 192, 0.55);
+            border-radius: 1.25rem;
+        }
+        .hidden-by-type { display: none; }
+        .image-preview {
+            width: 100%;
+            max-height: 140px;
+            object-fit: contain;
+            border-radius: 1rem;
+            border: 2px solid #eee7f7;
+            background: #fafafa;
+            display: none;
+        }
+        .output-area {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            min-height: 360px;
+            white-space: pre;
+            overflow: auto;
+            font-size: 0.78rem;
+            line-height: 1.15rem;
+        }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #2f174f;
+            color: #fff;
+            padding: 0.85rem 1.25rem;
+            border-radius: 999px;
+            font-weight: 900;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <header class="builder-gradient text-white p-6 shadow-xl border-b-4 border-white/30">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black">Match the Pairs Game Builder</h1>
+                <p class="font-bold text-white/90 mt-1">Create a child-friendly matching game using text tiles, image tiles, or a mixture of both.</p>
+            </div>
+            <div class="bg-white/16 rounded-2xl px-4 py-3 border border-white/25 text-sm font-extrabold">
+                Text or images • Copy code • Download HTML
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">1. Game settings</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">These settings control the generated matching game.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div>
+                    <label class="field-label" for="gameTitle">Game title</label>
+                    <input id="gameTitle" class="input-field" placeholder="Match the Pairs! 🧩">
+                </div>
+                <div>
+                    <label class="field-label" for="categoryName">Category / topic name</label>
+                    <input id="categoryName" class="input-field" placeholder="Computer Science Keywords">
+                </div>
+                <div>
+                    <label class="field-label" for="instructionText">Short instruction</label>
+                    <input id="instructionText" class="input-field" placeholder="Select two tiles that match.">
+                </div>
+                <div>
+                    <label class="field-label" for="backgroundColour">Background colour</label>
+                    <input id="backgroundColour" type="color" class="input-field h-[56px] p-2" value="#f6f2fb">
+                </div>
+                <div>
+                    <label class="field-label" for="headingSectionColour">Heading section colour</label>
+                    <input id="headingSectionColour" type="color" class="input-field h-[56px] p-2" value="#5b3293">
+                </div>
+                <div>
+                    <label class="field-label" for="headingTextColour">Heading text colour</label>
+                    <input id="headingTextColour" type="color" class="input-field h-[56px] p-2" value="#ffffff">
+                </div>
+                <div>
+                    <label class="field-label" for="wrongMatchPenaltySeconds">Wrong match penalty seconds</label>
+                    <input id="wrongMatchPenaltySeconds" type="number" min="0" max="60" step="1" class="input-field" placeholder="5">
+                </div>
+                <div>
+                    <label class="field-label" for="soundEffectsOnByDefault">Sound effects by default</label>
+                    <select id="soundEffectsOnByDefault" class="select-field">
+                        <option value="false" selected>Sound off by default</option>
+                        <option value="true">Sound on by default</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label" for="pairCount">Number of pairs</label>
+                    <select id="pairCount" class="select-field"></select>
+                    <p class="field-help">This creates two tiles for each pair.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">2. Pair tiles</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">Each pair has two matching tiles. Each tile can be text, an image link, or an uploaded image.</p>
+                </div>
+                <button id="refreshPairs" class="btn-secondary" type="button">Update pair boxes</button>
+            </div>
+            <div class="bg-[#f5effc] border-2 border-[#9c88c0]/30 rounded-2xl p-4 mb-5 text-[#3f2368] font-bold">
+                For Google Drive images, teachers can paste the normal share link. The builder will automatically convert it into a thumbnail link in the generated game.
+            </div>
+            <div id="pairsContainer" class="space-y-5"></div>
+        </section>
+
+        <section class="builder-card rounded-3xl p-5 md:p-7">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-2xl font-black text-[#3f2368]">3. Generate the game</h2>
+                    <p class="text-[#6b5a80] font-bold mt-1">Generate the standalone HTML, then copy it or download it as a file.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="generateCode" class="btn-primary" type="button">Generate game code</button>
+                    <button id="copyCode" class="btn-secondary" type="button">Copy code</button>
+                    <button id="downloadGame" class="btn-secondary" type="button">Download HTML</button>
+                </div>
+            </div>
+            <textarea id="generatedCode" class="input-field output-area" placeholder="Your generated game code will appear here after you click Generate game code."></textarea>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">Copied!</div>
+
+    <script>
+        const uploadedImages = new Map();
+        const placeholderPairs = [
+            ["Input device", "Hardware used to enter data into a computer."],
+            ["Output device", "Hardware used to display or produce information."],
+            ["CPU", "The part of the computer that processes instructions."],
+            ["RAM", "Temporary memory that loses data when power is off."],
+            ["Binary", "A number system that uses 0 and 1."],
+            ["Algorithm", "A step-by-step set of instructions."],
+            ["Variable", "A named storage location for data."],
+            ["Loop", "A structure that repeats instructions."],
+            ["Selection", "A decision in a program."],
+            ["Boolean", "A data type with true or false values."],
+            ["Network", "Connected computers that can share data."],
+            ["Encryption", "Changing data so it cannot be read without a key."],
+            ["Phishing", "A scam that tries to trick users into sharing details."],
+            ["Firewall", "Software or hardware that helps block unauthorised access."],
+            ["Cloud storage", "Saving files on remote servers accessed through the internet."],
+            ["Database", "An organised collection of data."],
+            ["Record", "One row of data in a database table."],
+            ["Field", "One column or category of data in a database table."],
+            ["Syntax error", "A mistake in code that breaks language rules."],
+            ["Logic error", "Code runs but gives the wrong result."]
+        ];
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        function populatePairCount() {
+            const select = document.getElementById('pairCount');
+            select.innerHTML = '';
+            for (let i = 2; i <= 20; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} pairs`;
+                if (i === 6) option.selected = true;
+                select.appendChild(option);
+            }
+        }
+
+        function tileConfigHtml(pairIndex, tileLetter, placeholderText) {
+            const key = `pair-${pairIndex}-${tileLetter}`;
+            const label = tileLetter === 'a' ? 'Tile A' : 'Tile B';
+            return `
+                <div class="tile-config p-4" data-tile-key="${key}">
+                    <h4 class="font-black text-[#3f2368] text-lg mb-3">${label}</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="field-label" for="${key}-type">Content type</label>
+                            <select id="${key}-type" class="select-field tile-type" data-key="${key}">
+                                <option value="text" selected>Text</option>
+                                <option value="imageUrl">Image link</option>
+                                <option value="upload">Upload image</option>
+                            </select>
+                        </div>
+                        <div class="tile-text-area" data-area="text">
+                            <label class="field-label" for="${key}-text">Tile text</label>
+                            <textarea id="${key}-text" class="textarea-field tile-text" placeholder="${escapeHtml(placeholderText)}"></textarea>
+                        </div>
+                        <div class="tile-image-url-area hidden-by-type" data-area="imageUrl">
+                            <label class="field-label" for="${key}-imageUrl">Image link</label>
+                            <input id="${key}-imageUrl" class="input-field tile-image-url" placeholder="https://drive.google.com/file/d/IMAGE_ID/view?usp=drive_link">
+                            <p class="field-help">Google Drive share links will be converted automatically.</p>
+                        </div>
+                        <div class="tile-upload-area hidden-by-type" data-area="upload">
+                            <label class="field-label" for="${key}-upload">Upload image</label>
+                            <input id="${key}-upload" type="file" accept="image/*" class="input-field tile-upload" data-key="${key}">
+                            <p class="field-help">Uploaded images are embedded into the generated HTML. Smaller images are better.</p>
+                            <img id="${key}-preview" class="image-preview mt-3" alt="Image preview">
+                        </div>
+                        <div class="tile-alt-area hidden-by-type" data-area="alt">
+                            <label class="field-label" for="${key}-alt">Image description / label</label>
+                            <input id="${key}-alt" class="input-field tile-alt" placeholder="Optional short description">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildPairBoxes() {
+            const count = Number(document.getElementById('pairCount').value || 6);
+            const container = document.getElementById('pairsContainer');
+            container.innerHTML = '';
+            uploadedImages.clear();
+
+            for (let i = 1; i <= count; i++) {
+                const sample = placeholderPairs[i - 1] || [`Keyword ${i}`, `Matching definition ${i}`];
+                const article = document.createElement('article');
+                article.className = 'pair-card';
+                article.innerHTML = `
+                    <div class="pair-heading px-5 py-3 flex items-center justify-between">
+                        <h3 class="font-black text-xl">Pair ${i}</h3>
+                        <span class="font-extrabold text-sm opacity-80">These two tiles will match</span>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        ${tileConfigHtml(i, 'a', sample[0])}
+                        ${tileConfigHtml(i, 'b', sample[1])}
+                    </div>
+                `;
+                container.appendChild(article);
+            }
+            wireTileControls();
+        }
+
+        function wireTileControls() {
+            document.querySelectorAll('.tile-type').forEach(select => {
+                select.addEventListener('change', () => updateTileType(select.dataset.key, select.value));
+                updateTileType(select.dataset.key, select.value);
+            });
+            document.querySelectorAll('.tile-upload').forEach(input => {
+                input.addEventListener('change', async () => {
+                    const key = input.dataset.key;
+                    const file = input.files && input.files[0];
+                    if (!file) {
+                        uploadedImages.delete(key);
+                        const preview = document.getElementById(`${key}-preview`);
+                        if (preview) preview.style.display = 'none';
+                        return;
+                    }
+                    try {
+                        const dataUrl = await resizeImageFile(file, 700, 0.82);
+                        uploadedImages.set(key, dataUrl);
+                        const preview = document.getElementById(`${key}-preview`);
+                        if (preview) {
+                            preview.src = dataUrl;
+                            preview.style.display = 'block';
+                        }
+                    } catch (error) {
+                        showToast('Could not read that image');
+                    }
+                });
+            });
+        }
+
+        function updateTileType(key, type) {
+            const tile = document.querySelector(`[data-tile-key="${key}"]`);
+            if (!tile) return;
+            const textArea = tile.querySelector('.tile-text-area');
+            const imageUrlArea = tile.querySelector('.tile-image-url-area');
+            const uploadArea = tile.querySelector('.tile-upload-area');
+            const altArea = tile.querySelector('.tile-alt-area');
+            textArea.classList.toggle('hidden-by-type', type !== 'text');
+            imageUrlArea.classList.toggle('hidden-by-type', type !== 'imageUrl');
+            uploadArea.classList.toggle('hidden-by-type', type !== 'upload');
+            altArea.classList.toggle('hidden-by-type', type === 'text');
+        }
+
+        function resizeImageFile(file, maxSize, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = () => {
+                        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.width * scale));
+                        canvas.height = Math.max(1, Math.round(img.height * scale));
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function normaliseDriveImageLink(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+
+            const patterns = [
+                /drive\.google\.com\/file\/d\/([^/]+)/i,
+                /drive\.google\.com\/open\?id=([^&]+)/i,
+                /drive\.google\.com\/uc\?id=([^&]+)/i,
+                /drive\.google\.com\/thumbnail\?id=([^&]+)/i,
+                /[?&]id=([^&]+)/i
+            ];
+            for (const pattern of patterns) {
+                const match = raw.match(pattern);
+                if (match && match[1]) {
+                    const id = decodeURIComponent(match[1]).replace(/[^a-zA-Z0-9_-]/g, '');
+                    if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w500`;
+                }
+            }
+            return raw;
+        }
+
+        function getTileData(pairIndex, tileLetter) {
+            const key = `pair-${pairIndex}-${tileLetter}`;
+            const type = document.getElementById(`${key}-type`).value;
+            if (type === 'text') {
+                return {
+                    type: 'text',
+                    content: document.getElementById(`${key}-text`).value.trim(),
+                    alt: ''
+                };
+            }
+            if (type === 'imageUrl') {
+                return {
+                    type: 'image',
+                    content: normaliseDriveImageLink(document.getElementById(`${key}-imageUrl`).value),
+                    alt: document.getElementById(`${key}-alt`).value.trim()
+                };
+            }
+            return {
+                type: 'image',
+                content: uploadedImages.get(key) || '',
+                alt: document.getElementById(`${key}-alt`).value.trim()
+            };
+        }
+
+        function validatePairs(pairs) {
+            const problems = [];
+            pairs.forEach((pair, index) => {
+                pair.tiles.forEach((tile, tileIndex) => {
+                    if (!tile.content) {
+                        const tileName = tileIndex === 0 ? 'A' : 'B';
+                        problems.push(`Pair ${index + 1}, Tile ${tileName} is empty.`);
+                    }
+                });
+            });
+            return problems;
+        }
+
+        function collectBuilderData() {
+            const pairCount = Number(document.getElementById('pairCount').value || 6);
+            const pairs = [];
+            for (let i = 1; i <= pairCount; i++) {
+                pairs.push({
+                    pairId: `pair-${i}`,
+                    tiles: [getTileData(i, 'a'), getTileData(i, 'b')]
+                });
+            }
+            return {
+                settings: {
+                    categoryName: document.getElementById('categoryName').value.trim() || 'Match the Pairs',
+                    backgroundColour: document.getElementById('backgroundColour').value || '#f6f2fb',
+                    headingSectionColour: document.getElementById('headingSectionColour').value || '#5b3293',
+                    headingTextColour: document.getElementById('headingTextColour').value || '#ffffff',
+                    wrongMatchPenaltySeconds: Math.max(0, Number(document.getElementById('wrongMatchPenaltySeconds').value || 5)),
+                    soundEffectsOnByDefault: document.getElementById('soundEffectsOnByDefault').value === 'true',
+                    gameTitle: document.getElementById('gameTitle').value.trim() || 'Match the Pairs! 🧩',
+                    instructionText: document.getElementById('instructionText').value.trim() || 'Select two tiles that match.'
+                },
+                pairs
+            };
+        }
+
+        function safeJson(value) {
+            return JSON.stringify(value, null, 12)
+                .replace(/<\//g, '<\\/');
+        }
+
+        function generateStandaloneGame(data) {
+            const settingsJson = safeJson(data.settings);
+            const pairsJson = safeJson(data.pairs);
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapeHtml(data.settings.gameTitle)}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: ${data.settings.backgroundColour};
+            --heading: ${data.settings.headingSectionColour};
+            --heading-text: ${data.settings.headingTextColour};
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 16px 16px, color-mix(in srgb, var(--heading) 10%, transparent) 2px, transparent 0);
+            background-size: 44px 44px;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-1.5deg); }
+            40% { transform: translateX(8px) rotate(1.5deg); }
+            60% { transform: translateX(-8px) rotate(-1.5deg); }
+            80% { transform: translateX(8px) rotate(1.5deg); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.75); opacity: 0; }
+            80% { transform: scale(1.04); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-shake { animation: shake 0.42s ease-in-out; }
+        .animate-pop { animation: popIn 0.32s ease-out both; }
+        .theme-bg { background: var(--heading); color: var(--heading-text); }
+        .theme-border { border-color: var(--heading); }
+        .theme-text { color: var(--heading); }
+        .stat-pill {
+            background: rgba(255,255,255,0.93);
+            border: 2px solid rgba(255,255,255,0.45);
+            color: #273043;
+            border-radius: 999px;
+            padding: 0.55rem 0.9rem;
+            font-weight: 900;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.07);
+        }
+        .game-card {
+            min-height: 150px;
+            border: 4px solid #d8dee9;
+            border-radius: 1.35rem;
+            background: #ffffff;
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.10);
+            transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+        }
+        .game-card:hover:not(.matched) { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14); }
+        .game-card.selected {
+            border-color: var(--heading);
+            box-shadow: 0 0 0 7px color-mix(in srgb, var(--heading) 24%, transparent), 0 16px 30px rgba(15, 23, 42, 0.12);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .game-card.matched {
+            border-color: #22c55e;
+            background: #ecfdf5;
+            cursor: default;
+            opacity: 0.94;
+        }
+        .game-card.wrong { border-color: #ef4444; }
+        .card-inner {
+            height: 100%;
+            min-height: 150px;
+            padding: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .card-text {
+            font-size: clamp(0.95rem, 2.5vw, 1.35rem);
+            line-height: 1.16;
+            font-weight: 900;
+            color: #1f2937;
+            overflow-wrap: anywhere;
+        }
+        .card-image {
+            width: 100%;
+            height: 132px;
+            object-fit: contain;
+            border-radius: 1rem;
+            background: #f8fafc;
+        }
+        @media (min-width: 768px) {
+            .game-card { min-height: 174px; }
+            .card-inner { min-height: 174px; }
+            .card-image { height: 150px; }
+        }
+        .modal-backdrop {
+            background: rgba(15, 23, 42, 0.66);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex flex-col">
+    <header class="theme-bg shadow-xl border-b-4 border-white/25 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto p-4 md:p-5 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div>
+                    <h1 id="game-title" class="text-2xl md:text-4xl font-black leading-tight"></h1>
+                    <p id="game-subtitle" class="font-bold opacity-90 mt-1"></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="sound-toggle" class="bg-white/20 hover:bg-white/30 text-white font-black px-4 py-2 rounded-full border border-white/30 transition">Sound Off</button>
+                    <button onclick="location.reload()" class="bg-white text-gray-900 font-black px-4 py-2 rounded-full shadow hover:scale-105 active:scale-95 transition">Start Again</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <div class="stat-pill">Pairs: <span id="score-display">0</span> / <span id="total-display">0</span></div>
+                <div class="stat-pill">Time: <span id="timer-display">0:00.0</span></div>
+                <div class="stat-pill">Wrong: <span id="wrong-display">0</span></div>
+                <div class="stat-pill">Penalty: <span id="penalty-display">+0:00.0</span></div>
+                <div class="stat-pill">Best: <span id="best-display">—</span></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6">
+        <section class="bg-white rounded-3xl shadow-xl border-4 border-white/70 overflow-hidden">
+            <div class="theme-bg px-5 py-3">
+                <h2 class="text-xl font-black uppercase tracking-wide">Choose two matching tiles</h2>
+            </div>
+            <div class="p-4 md:p-6">
+                <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="win-modal" class="fixed inset-0 modal-backdrop z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl border-4 theme-border">
+            <div class="text-7xl mb-3">🏆</div>
+            <h2 class="text-4xl font-black theme-text mb-2">Great matching!</h2>
+            <p class="text-lg text-gray-600 font-bold mb-5">You found all the pairs.</p>
+            <div class="bg-gray-50 rounded-2xl p-4 text-left font-extrabold space-y-2 mb-6">
+                <div>Raw time: <span id="final-raw-time"></span></div>
+                <div>Wrong matches: <span id="final-wrong"></span></div>
+                <div>Penalty: <span id="final-penalty"></span></div>
+                <div class="text-2xl theme-text">Final score time: <span id="final-score-time"></span></div>
+                <div>Best score: <span id="final-best"></span></div>
+            </div>
+            <button onclick="location.reload()" class="theme-bg w-full py-3 rounded-full text-xl font-black shadow-lg hover:scale-105 active:scale-95 transition">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const teacherSettings = ${settingsJson};
+        const pairData = ${pairsJson};
+
+        let score = 0;
+        let wrongMatches = 0;
+        let selectedCards = [];
+        let inputLocked = false;
+        let timerStarted = false;
+        let timerInterval = null;
+        let startTime = 0;
+        let elapsedMs = 0;
+        let soundEnabled = Boolean(teacherSettings.soundEffectsOnByDefault);
+        let audioContext = null;
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--bg', teacherSettings.backgroundColour);
+            document.documentElement.style.setProperty('--heading', teacherSettings.headingSectionColour);
+            document.documentElement.style.setProperty('--heading-text', teacherSettings.headingTextColour);
+            document.title = teacherSettings.gameTitle;
+            document.getElementById('game-title').textContent = teacherSettings.gameTitle;
+            document.getElementById('game-subtitle').textContent = teacherSettings.instructionText + ' Topic: ' + teacherSettings.categoryName;
+            document.getElementById('total-display').textContent = pairData.length;
+            updateSoundButton();
+            updateBestDisplay();
+        }
+
+        function flattenCards() {
+            return pairData.flatMap((pair, pairIndex) => pair.tiles.map((tile, tileIndex) => ({
+                id: pair.pairId + '-' + tileIndex,
+                pairId: pair.pairId,
+                type: tile.type,
+                content: tile.content,
+                alt: tile.alt || ('Pair ' + (pairIndex + 1) + ' tile ' + (tileIndex + 1))
+            })));
+        }
+
+        function shuffle(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            applySettings();
+            const cards = shuffle(flattenCards());
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            cards.forEach((card, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'game-card animate-pop';
+                button.style.animationDelay = Math.min(index * 0.025, 0.35) + 's';
+                button.dataset.id = card.id;
+                button.dataset.pairId = card.pairId;
+                button.setAttribute('aria-label', card.alt || card.content || 'Matching card');
+                button.innerHTML = '<div class="card-inner">' + renderCardContent(card) + '</div>';
+                button.addEventListener('click', () => handleCardClick(button));
+                grid.appendChild(button);
+            });
+            updateStats();
+        }
+
+        function renderCardContent(card) {
+            if (card.type === 'image') {
+                return '<img class="card-image" src="' + escapeAttribute(card.content) + '" alt="' + escapeAttribute(card.alt || '') + '">';
+            }
+            return '<div class="card-text">' + escapeHtml(card.content) + '</div>';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        function escapeAttribute(value) { return escapeHtml(value); }
+
+        function handleCardClick(cardElement) {
+            if (inputLocked || cardElement.classList.contains('matched')) return;
+            startTimer();
+            playSound('tap');
+
+            if (selectedCards.includes(cardElement)) {
+                cardElement.classList.remove('selected');
+                selectedCards = selectedCards.filter(card => card !== cardElement);
+                return;
+            }
+
+            if (selectedCards.length >= 2) return;
+            cardElement.classList.add('selected');
+            selectedCards.push(cardElement);
+
+            if (selectedCards.length === 2) {
+                checkSelectedPair();
+            }
+        }
+
+        function checkSelectedPair() {
+            inputLocked = true;
+            const [first, second] = selectedCards;
+            const isMatch = first.dataset.pairId === second.dataset.pairId;
+
+            if (isMatch) {
+                setTimeout(() => {
+                    first.classList.remove('selected');
+                    second.classList.remove('selected');
+                    first.classList.add('matched');
+                    second.classList.add('matched');
+                    selectedCards = [];
+                    inputLocked = false;
+                    score++;
+                    playSound('correct');
+                    updateStats();
+                    if (score === pairData.length) finishGame();
+                }, 250);
+            } else {
+                wrongMatches++;
+                first.classList.add('wrong', 'animate-shake');
+                second.classList.add('wrong', 'animate-shake');
+                playSound('wrong');
+                updateStats();
+                setTimeout(() => {
+                    first.classList.remove('selected', 'wrong', 'animate-shake');
+                    second.classList.remove('selected', 'wrong', 'animate-shake');
+                    selectedCards = [];
+                    inputLocked = false;
+                }, 720);
+            }
+        }
+
+        function startTimer() {
+            if (timerStarted) return;
+            timerStarted = true;
+            startTime = performance.now();
+            timerInterval = setInterval(() => {
+                elapsedMs = performance.now() - startTime;
+                document.getElementById('timer-display').textContent = formatTime(elapsedMs);
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            elapsedMs = timerStarted ? performance.now() - startTime : 0;
+            document.getElementById('timer-display').textContent = formatTime(elapsedMs);
+        }
+
+        function getPenaltyMs() {
+            return wrongMatches * Number(teacherSettings.wrongMatchPenaltySeconds || 0) * 1000;
+        }
+
+        function getFinalScoreMs() {
+            return elapsedMs + getPenaltyMs();
+        }
+
+        function bestKey() {
+            return 'matchPairsBest:' + teacherSettings.categoryName + ':' + pairData.length;
+        }
+
+        function updateBestDisplay() {
+            const best = sessionStorage.getItem(bestKey());
+            document.getElementById('best-display').textContent = best ? formatTime(Number(best)) : '—';
+        }
+
+        function finishGame() {
+            stopTimer();
+            const finalScore = getFinalScoreMs();
+            const previousBest = sessionStorage.getItem(bestKey());
+            if (!previousBest || finalScore < Number(previousBest)) {
+                sessionStorage.setItem(bestKey(), String(finalScore));
+            }
+            updateStats();
+            updateBestDisplay();
+            document.getElementById('final-raw-time').textContent = formatTime(elapsedMs);
+            document.getElementById('final-wrong').textContent = wrongMatches;
+            document.getElementById('final-penalty').textContent = '+' + formatTime(getPenaltyMs());
+            document.getElementById('final-score-time').textContent = formatTime(finalScore);
+            document.getElementById('final-best').textContent = formatTime(Number(sessionStorage.getItem(bestKey())));
+            document.getElementById('win-modal').classList.remove('hidden');
+            document.getElementById('win-modal').classList.add('flex');
+            playSound('win');
+        }
+
+        function updateStats() {
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('wrong-display').textContent = wrongMatches;
+            document.getElementById('penalty-display').textContent = '+' + formatTime(getPenaltyMs());
+        }
+
+        function formatTime(ms) {
+            const totalTenths = Math.max(0, Math.floor(ms / 100));
+            const minutes = Math.floor(totalTenths / 600);
+            const seconds = Math.floor((totalTenths % 600) / 10);
+            const tenths = totalTenths % 10;
+            return minutes + ':' + String(seconds).padStart(2, '0') + '.' + tenths;
+        }
+
+        function updateSoundButton() {
+            const button = document.getElementById('sound-toggle');
+            button.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioContext.currentTime;
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+                const soundMap = {
+                    tap: [440, 0.045, 'sine'],
+                    correct: [660, 0.11, 'triangle'],
+                    wrong: [170, 0.14, 'sawtooth'],
+                    win: [880, 0.28, 'triangle']
+                };
+                const [frequency, duration, wave] = soundMap[type] || soundMap.tap;
+                oscillator.type = wave;
+                oscillator.frequency.setValueAtTime(frequency, now);
+                if (type === 'win') oscillator.frequency.exponentialRampToValueAtTime(1175, now + duration);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                oscillator.start(now);
+                oscillator.stop(now + duration + 0.02);
+            } catch (error) {
+                soundEnabled = false;
+                updateSoundButton();
+            }
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            updateSoundButton();
+            if (soundEnabled) playSound('correct');
+        });
+
+        document.addEventListener('DOMContentLoaded', initGame);
+    <\/script>
+</body>
+</html>`;
+        }
+
+        async function generateCode() {
+            const data = collectBuilderData();
+            const problems = validatePairs(data.pairs);
+            if (problems.length) {
+                alert(`Please fix the following before generating:\n\n${problems.slice(0, 8).join('\n')}${problems.length > 8 ? '\n...' : ''}`);
+                return;
+            }
+            const code = generateStandaloneGame(data);
+            document.getElementById('generatedCode').value = code;
+            showToast('Game code generated');
+        }
+
+        async function copyCode() {
+            const output = document.getElementById('generatedCode');
+            if (!output.value.trim()) await generateCode();
+            output.select();
+            output.setSelectionRange(0, 99999999);
+            try {
+                await navigator.clipboard.writeText(output.value);
+                showToast('Code copied');
+            } catch (error) {
+                document.execCommand('copy');
+                showToast('Code copied');
+            }
+        }
+
+        async function downloadGame() {
+            const output = document.getElementById('generatedCode');
+            if (!output.value.trim()) await generateCode();
+            const blob = new Blob([output.value], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const safeTitle = (document.getElementById('gameTitle').value || 'match-the-pairs-game')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '') || 'match-the-pairs-game';
+            link.href = url;
+            link.download = `${safeTitle}.html`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            showToast('HTML downloaded');
+        }
+
+        document.getElementById('refreshPairs').addEventListener('click', buildPairBoxes);
+        document.getElementById('pairCount').addEventListener('change', buildPairBoxes);
+        document.getElementById('generateCode').addEventListener('click', generateCode);
+        document.getElementById('copyCode').addEventListener('click', copyCode);
+        document.getElementById('downloadGame').addEventListener('click', downloadGame);
+
+        populatePairCount();
+        buildPairBoxes();
+    </script>
+</body>
+</html>
