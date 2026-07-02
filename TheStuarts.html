@@ -262,7 +262,11 @@
                 </div>
                 <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
                     Time: <span id="timer-display">0:00.0</span>
-                    <span class="block text-sm font-black mt-1">Fastest: <span id="best-time-display">—</span></span>
+                    <span class="block text-sm font-black mt-1">Best score: <span id="best-time-display">—</span></span>
+                </div>
+                <div class="score-pill bg-emerald-100 text-emerald-800 px-6 py-2 rounded-2xl font-bold text-xl shadow-inner border-2 border-emerald-200 text-center leading-tight min-w-[150px]">
+                    Mistakes: <span id="mistake-display">0</span>
+                    <span class="block text-sm font-black mt-1">Penalty: +<span id="penalty-display">0:00.0</span></span>
                 </div>
             </div>
         </div>
@@ -302,10 +306,13 @@
             <div class="text-7xl mb-4">🏆</div>
             <h2 id="win-title" class="win-title text-4xl font-black text-emerald-600 mb-2">Incredible!</h2>
             <p id="win-message" class="text-xl text-gray-600 mb-4">You have perfectly ordered the timeline of The Stuarts.</p>
-            <div id="final-time-summary" class="hidden bg-gray-100 rounded-2xl p-4 mb-6 text-gray-700">
-                <p class="text-lg font-black">Your time: <span id="final-time">0:00.0</span></p>
-                <p class="text-base font-bold mt-1">Fastest time: <span id="final-best-time">—</span></p>
-                <p id="new-best-message" class="hidden text-sm font-black mt-2">New fastest time!</p>
+            <div id="final-time-summary" class="hidden bg-gray-100 rounded-2xl p-4 mb-6 text-gray-700 text-left">
+                <p class="text-base font-bold">Raw time: <span id="final-raw-time">0:00.0</span></p>
+                <p class="text-base font-bold mt-1">Mistakes: <span id="final-mistakes">0</span> × <span id="final-penalty-each">5s</span></p>
+                <p class="text-base font-bold mt-1">Accuracy penalty: +<span id="final-penalty">0:00.0</span></p>
+                <p class="text-xl font-black mt-3 text-center">Final score time: <span id="final-adjusted-time">0:00.0</span></p>
+                <p class="text-base font-bold mt-2 text-center">Best score: <span id="final-best-time">—</span></p>
+                <p id="new-best-message" class="hidden text-sm font-black mt-2 text-center">New best score!</p>
             </div>
             <button id="play-again-button" onclick="location.reload()" class="play-again-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 w-full">
                 Play Again
@@ -332,9 +339,12 @@
          *
          * cardsToUse cannot be higher than the number of cards in allGameCards.
          * If you want 10 cards, allGameCards needs at least 10 card entries.
+         *
+         * wrongPlacementPenaltySeconds controls the accuracy penalty.
+         * Example: 5 means every incorrect drop adds 5 seconds to the final score time.
          */
         const teacherSettings = {
-            cardsToUse: 10,
+            cardsToUse: 9,
 
             // Main topic/category shown on every card
             categoryName: "The Stuarts",
@@ -344,6 +354,10 @@
             backgroundPatternColour: "#22c55e",
             headingSectionColour: "#059669",
             headingTextColour: "#ffffff",
+
+            // Accuracy scoring
+            // Each wrong placement adds this many seconds to the final score time.
+            wrongPlacementPenaltySeconds: 5,
 
             // Wording shown around the game
             gameTitle: "Timeline Challenge! ⏳",
@@ -406,6 +420,7 @@
         let timerStartMs = 0;
         let timerIntervalId = null;
         let bestTimeMs = null;
+        let wrongPlacements = 0;
 
         function textWithCategory(text) {
             return String(text).replace(/\{category\}/g, teacherSettings.categoryName);
@@ -483,10 +498,38 @@
             return Math.max(min, Math.min(value, max));
         }
 
+        function getWrongPlacementPenaltySeconds() {
+            const penaltySeconds = Number(teacherSettings.wrongPlacementPenaltySeconds);
+            return Number.isFinite(penaltySeconds) && penaltySeconds >= 0 ? penaltySeconds : 5;
+        }
+
+        function getCurrentPenaltyMs() {
+            return wrongPlacements * getWrongPlacementPenaltySeconds() * 1000;
+        }
+
+        function formatPenaltySecondsText(seconds) {
+            const rounded = Math.round(seconds * 10) / 10;
+            return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}s`;
+        }
+
+        function updateMistakeDisplay() {
+            const mistakeDisplay = document.getElementById('mistake-display');
+            const penaltyDisplay = document.getElementById('penalty-display');
+
+            if (mistakeDisplay) mistakeDisplay.innerText = wrongPlacements;
+            if (penaltyDisplay) penaltyDisplay.innerText = formatTime(getCurrentPenaltyMs());
+        }
+
+        function recordWrongPlacement() {
+            wrongPlacements++;
+            updateMistakeDisplay();
+        }
+
         function getBestTimeStorageKey() {
             // sessionStorage keeps this in the current browser tab/window, including after pressing Play Again.
             // Closing the tab/window clears it.
-            return `timeline-game-best-time:${teacherSettings.categoryName}:${gameData.length}`;
+            // The best score is based on final score time: raw time + accuracy penalties.
+            return `timeline-game-best-score:${teacherSettings.categoryName}:${gameData.length}:${getWrongPlacementPenaltySeconds()}s`;
         }
 
         function getStoredBestTime() {
@@ -534,6 +577,7 @@
         function loadBestTime() {
             bestTimeMs = getStoredBestTime();
             updateTimerDisplay(0);
+            updateMistakeDisplay();
             updateBestTimeDisplay();
         }
 
@@ -555,26 +599,37 @@
             timerFinished = true;
             if (timerIntervalId) clearInterval(timerIntervalId);
 
-            const finalTimeMs = timerStarted ? performance.now() - timerStartMs : 0;
-            const isNewBestTime = bestTimeMs === null || finalTimeMs < bestTimeMs;
+            const rawTimeMs = timerStarted ? performance.now() - timerStartMs : 0;
+            const penaltyMs = getCurrentPenaltyMs();
+            const adjustedTimeMs = rawTimeMs + penaltyMs;
+            const isNewBestTime = bestTimeMs === null || adjustedTimeMs < bestTimeMs;
 
-            updateTimerDisplay(finalTimeMs);
+            updateTimerDisplay(rawTimeMs);
+            updateMistakeDisplay();
 
             if (isNewBestTime) {
-                bestTimeMs = finalTimeMs;
+                bestTimeMs = adjustedTimeMs;
                 storeBestTime(bestTimeMs);
             }
 
             updateBestTimeDisplay();
-            showFinalTime(finalTimeMs, isNewBestTime);
+            showFinalTime(rawTimeMs, penaltyMs, adjustedTimeMs, isNewBestTime);
         }
 
-        function showFinalTime(finalTimeMs, isNewBestTime) {
+        function showFinalTime(rawTimeMs, penaltyMs, adjustedTimeMs, isNewBestTime) {
             const finalSummary = document.getElementById('final-time-summary');
-            const finalTime = document.getElementById('final-time');
+            const finalRawTime = document.getElementById('final-raw-time');
+            const finalMistakes = document.getElementById('final-mistakes');
+            const finalPenaltyEach = document.getElementById('final-penalty-each');
+            const finalPenalty = document.getElementById('final-penalty');
+            const finalAdjustedTime = document.getElementById('final-adjusted-time');
             const newBestMessage = document.getElementById('new-best-message');
 
-            if (finalTime) finalTime.innerText = formatTime(finalTimeMs);
+            if (finalRawTime) finalRawTime.innerText = formatTime(rawTimeMs);
+            if (finalMistakes) finalMistakes.innerText = wrongPlacements;
+            if (finalPenaltyEach) finalPenaltyEach.innerText = formatPenaltySecondsText(getWrongPlacementPenaltySeconds());
+            if (finalPenalty) finalPenalty.innerText = formatTime(penaltyMs);
+            if (finalAdjustedTime) finalAdjustedTime.innerText = formatTime(adjustedTimeMs);
             if (finalSummary) finalSummary.classList.remove('hidden');
 
             if (newBestMessage) {
@@ -778,6 +833,7 @@
                     fireConfetti();
                 }
             } else {
+                recordWrongPlacement();
                 card.classList.add('animate-shake', 'border-red-500');
                 setTimeout(() => card.classList.remove('animate-shake', 'border-red-500'), 400);
             }
