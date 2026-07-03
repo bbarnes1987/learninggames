@@ -27,6 +27,13 @@
       "updatedAt": "2026-07-02T16:17:40.608Z"
     },
     {
+      "title": "Harry Potter - Philosopher's Stone Timeline",
+      "file": "harry-potter-timeline-quiz.html",
+      "type": "timeline",
+      "category": "Harry Potter",
+      "updatedAt": "2026-07-03T05:57:27.510Z"
+    },
+    {
       "title": "Harry Potter Matching Quiz",
       "file": "harry-potter-matching-quiz.html",
       "type": "match",
@@ -71,7 +78,7 @@
       "file": "the-greeks-timeline-quiz.html",
       "type": "timeline",
       "category": "The Greeks",
-      "updatedAt": "2026-07-02T20:49:26.706Z" 
+      "updatedAt": "2026-07-02T20:49:26.706Z"
     },
     {
       "title": "The Tudorss - Timeline Challenge!",
@@ -100,5 +107,5 @@
       "updatedAt": "2026-07-02T22:18:59.584Z"
     }
   ],
-  "updatedAt": "2026-07-02T22:18:59.586Z"
+  "updatedAt": "2026-07-03T05:57:27.514Z"
 }
