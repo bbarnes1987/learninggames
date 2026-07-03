@@ -1,6 +1,13 @@
 {
   "quizzes": [
     {
+      "title": "4 times tables - Times Table Challenge",
+      "file": "4-times-tables-matching-quiz.html",
+      "type": "matching",
+      "category": "4 times tables",
+      "updatedAt": "2026-07-03T06:04:36.226Z"
+    },
+    {
       "title": "Ancient Egypt - Timeline Challenge!",
       "file": "ancient-egypt-timeline-quiz.html",
       "type": "timeline",
@@ -107,5 +114,5 @@
       "updatedAt": "2026-07-02T22:18:59.584Z"
     }
   ],
-  "updatedAt": "2026-07-03T05:57:27.514Z"
+  "updatedAt": "2026-07-03T06:04:36.229Z"
 }

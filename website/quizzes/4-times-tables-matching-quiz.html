@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>4 times tables - Times Table Challenge</title>
+
+    <!-- App / tablet full-screen support -->
+    <link rel="manifest" href="../manifest.webmanifest">
+    <meta name="theme-color" content="#5b3293">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Education Games">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../icons/icon-192.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f6f2fb;
+            --heading: #5b3293;
+            --heading-text: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 16px 16px, color-mix(in srgb, var(--heading) 10%, transparent) 2px, transparent 0);
+            background-size: 44px 44px;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-1.5deg); }
+            40% { transform: translateX(8px) rotate(1.5deg); }
+            60% { transform: translateX(-8px) rotate(-1.5deg); }
+            80% { transform: translateX(8px) rotate(1.5deg); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.75); opacity: 0; }
+            80% { transform: scale(1.04); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-shake { animation: shake 0.42s ease-in-out; }
+        .animate-pop { animation: popIn 0.32s ease-out both; }
+        .theme-bg { background: var(--heading); color: var(--heading-text); }
+        .theme-border { border-color: var(--heading); }
+        .theme-text { color: var(--heading); }
+        .stat-pill {
+            background: rgba(255,255,255,0.93);
+            border: 2px solid rgba(255,255,255,0.45);
+            color: #273043;
+            border-radius: 999px;
+            padding: 0.55rem 0.9rem;
+            font-weight: 900;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.07);
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            height: 100vh;
+            max-height: 100vh;
+        }
+        body > header {
+            position: relative !important;
+            flex-shrink: 0;
+        }
+        body > header .max-w-7xl {
+            padding: clamp(0.45rem, 1.1vh, 1rem) clamp(0.7rem, 1.4vw, 1.25rem) !important;
+            gap: clamp(0.35rem, 0.8vh, 0.8rem) !important;
+        }
+        #game-title {
+            font-size: clamp(1.1rem, 2.3vw, 2.15rem) !important;
+        }
+        #game-subtitle {
+            font-size: clamp(0.72rem, 1.15vw, 0.98rem);
+            margin-top: 0.15rem !important;
+        }
+        .stat-pill {
+            padding: clamp(0.28rem, 0.75vh, 0.55rem) clamp(0.48rem, 1vw, 0.9rem);
+            font-size: clamp(0.68rem, 1vw, 0.92rem);
+        }
+        body > header button {
+            padding: clamp(0.32rem, 0.85vh, 0.55rem) clamp(0.65rem, 1.25vw, 1rem) !important;
+            font-size: clamp(0.72rem, 1vw, 0.92rem) !important;
+        }
+        main {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            padding: clamp(0.45rem, 1.2vh, 1.25rem) clamp(0.55rem, 1.4vw, 1.5rem) !important;
+        }
+        main > section {
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        main > section > .theme-bg {
+            flex-shrink: 0;
+            padding: clamp(0.42rem, 0.9vh, 0.8rem) clamp(0.75rem, 1.6vw, 1.25rem) !important;
+        }
+        main > section > .theme-bg h2 {
+            font-size: clamp(0.82rem, 1.4vw, 1.25rem) !important;
+        }
+        #game-grid-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            padding: clamp(0.45rem, 1.1vh, 1.1rem) !important;
+        }
+        #game-grid {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            align-content: center;
+            justify-content: center;
+        }
+        .game-card {
+            height: 100%;
+            min-height: 0;
+            border: var(--match-card-border, 4px) solid #d8dee9;
+            border-radius: var(--match-card-radius, 1.1rem);
+            background: #ffffff;
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.10);
+            transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+            padding: 0;
+        }
+        .game-card:hover:not(.matched) { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14); }
+        .game-card.selected {
+            border-color: var(--heading);
+            box-shadow: 0 0 0 7px color-mix(in srgb, var(--heading) 24%, transparent), 0 16px 30px rgba(15, 23, 42, 0.12);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .game-card.matched {
+            border-color: #22c55e;
+            background: #ecfdf5;
+            cursor: default;
+            opacity: 0.94;
+        }
+        .game-card.wrong { border-color: #ef4444; }
+        .card-inner {
+            height: 100%;
+            min-height: 0;
+            padding: var(--match-card-pad, 0.75rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .game-card.memory {
+            perspective: 900px;
+            background: transparent;
+            border-color: transparent;
+            box-shadow: none;
+        }
+        .game-card.memory .card-inner {
+            position: relative;
+            padding: 0;
+            transform-style: preserve-3d;
+            transition: transform 0.42s cubic-bezier(.2,.8,.2,1);
+        }
+        .game-card.memory.flipped .card-inner,
+        .game-card.memory.matched .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border: var(--match-card-border, 4px) solid #d8dee9;
+            border-radius: var(--match-card-radius, 1.1rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--match-card-pad, 0.75rem);
+            overflow: hidden;
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.10);
+        }
+        .card-front {
+            background: #ffffff;
+            transform: rotateY(180deg);
+        }
+        .card-back {
+            background: linear-gradient(135deg, var(--heading), color-mix(in srgb, var(--heading) 62%, #ffffff));
+            color: var(--heading-text);
+            flex-direction: column;
+            gap: 0.28rem;
+        }
+        .memory-symbol {
+            font-size: var(--memory-symbol-size, 2rem);
+            line-height: 1;
+        }
+        .memory-label {
+            font-size: var(--memory-label-size, 0.8rem);
+            font-weight: 900;
+            line-height: 1.05;
+        }
+        .card-text {
+            font-size: var(--match-card-text-size, 1rem);
+            line-height: 1.08;
+            font-weight: 900;
+            color: #1f2937;
+            overflow-wrap: anywhere;
+            display: -webkit-box;
+            -webkit-line-clamp: var(--match-card-lines, 5);
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-image {
+            width: 100%;
+            height: var(--match-card-img-h, 110px);
+            object-fit: contain;
+            border-radius: var(--match-img-radius, 0.8rem);
+            background: #f8fafc;
+        }
+        .modal-backdrop {
+            background: rgba(15, 23, 42, 0.66);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col">
+    <header class="theme-bg shadow-xl border-b-4 border-white/25 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto p-4 md:p-5 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div>
+                    <h1 id="game-title" class="text-2xl md:text-4xl font-black leading-tight"></h1>
+                    <p id="game-subtitle" class="font-bold opacity-90 mt-1"></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="sound-toggle" class="bg-white/20 hover:bg-white/30 text-white font-black px-4 py-2 rounded-full border border-white/30 transition">Sound Off</button>
+                    <button onclick="location.reload()" class="bg-white text-gray-900 font-black px-4 py-2 rounded-full shadow hover:scale-105 active:scale-95 transition">Start Again</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <div class="stat-pill">Pairs: <span id="score-display">0</span> / <span id="total-display">0</span></div>
+                <div class="stat-pill">Time: <span id="timer-display">0:00.0</span></div>
+                <div class="stat-pill">Wrong: <span id="wrong-display">0</span></div>
+                <div class="stat-pill">Penalty: <span id="penalty-display">+0:00.0</span></div>
+                <div class="stat-pill">Best: <span id="best-display">—</span></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full">
+        <section class="bg-white rounded-3xl shadow-xl border-4 border-white/70 overflow-hidden">
+            <div class="theme-bg px-5 py-3">
+                <h2 id="game-board-heading" class="text-xl font-black uppercase tracking-wide">Choose two matching tiles</h2>
+            </div>
+            <div id="game-grid-wrap" class="p-4 md:p-6">
+                <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="win-modal" class="fixed inset-0 modal-backdrop z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl border-4 theme-border">
+            <div class="text-7xl mb-3">🏆</div>
+            <h2 class="text-4xl font-black theme-text mb-2">Great matching!</h2>
+            <p class="text-lg text-gray-600 font-bold mb-5">You found all the pairs.</p>
+            <div class="bg-gray-50 rounded-2xl p-4 text-left font-extrabold space-y-2 mb-6">
+                <div>Raw time: <span id="final-raw-time"></span></div>
+                <div>Wrong matches: <span id="final-wrong"></span></div>
+                <div>Penalty: <span id="final-penalty"></span></div>
+                <div class="text-2xl theme-text">Final score time: <span id="final-score-time"></span></div>
+                <div>Best score: <span id="final-best"></span></div>
+            </div>
+            <button onclick="location.reload()" class="theme-bg w-full py-3 rounded-full text-xl font-black shadow-lg hover:scale-105 active:scale-95 transition">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const teacherSettings = {
+          "categoryName": "4 times tables",
+          "backgroundColour": "#f6f2fb",
+          "headingSectionColour": "#5b3293",
+          "headingTextColour": "#ffffff",
+          "wrongMatchPenaltySeconds": 5,
+          "soundEffectsOnByDefault": false,
+          "gameMode": "pairs",
+          "gameTitle": "Times Table Challenge",
+          "instructionText": "Select the two tiles that match"
+};
+        const pairData = [
+          {
+                    "pairId": "pair-1",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "0",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "0 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-2",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "4",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "4 x 1 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-3",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "8",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "4 x 2 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-4",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "12",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "4 x 3 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-5",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "16",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "4 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-6",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "20",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "5 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-7",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "24",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "6 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-8",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "28",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "7 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-9",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "32",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "8 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-10",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "36",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "9 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-11",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "40",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "10 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-12",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "44",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "11 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          },
+          {
+                    "pairId": "pair-13",
+                    "tiles": [
+                              {
+                                        "type": "text",
+                                        "content": "48",
+                                        "alt": ""
+                              },
+                              {
+                                        "type": "text",
+                                        "content": "12 x 4 =",
+                                        "alt": ""
+                              }
+                    ]
+          }
+];
+
+        let score = 0;
+        let wrongMatches = 0;
+        let selectedCards = [];
+        let inputLocked = false;
+        let timerStarted = false;
+        let timerInterval = null;
+        let startTime = 0;
+        let elapsedMs = 0;
+        let soundEnabled = Boolean(teacherSettings.soundEffectsOnByDefault);
+        let audioContext = null;
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--bg', teacherSettings.backgroundColour);
+            document.documentElement.style.setProperty('--heading', teacherSettings.headingSectionColour);
+            document.documentElement.style.setProperty('--heading-text', teacherSettings.headingTextColour);
+            document.title = teacherSettings.gameTitle;
+            document.getElementById('game-title').textContent = teacherSettings.gameTitle;
+            document.getElementById('game-subtitle').textContent = teacherSettings.instructionText + ' Topic: ' + teacherSettings.categoryName;
+            document.getElementById('game-board-heading').textContent = teacherSettings.gameMode === 'memory' ? 'Memory match - find the pairs' : 'Choose two matching tiles';
+            document.getElementById('total-display').textContent = pairData.length;
+            updateSoundButton();
+            updateBestDisplay();
+        }
+
+        function flattenCards() {
+            return pairData.flatMap((pair, pairIndex) => pair.tiles.map((tile, tileIndex) => ({
+                id: pair.pairId + '-' + tileIndex,
+                pairId: pair.pairId,
+                type: tile.type,
+                content: tile.content,
+                alt: tile.alt || ('Pair ' + (pairIndex + 1) + ' tile ' + (tileIndex + 1))
+            })));
+        }
+
+        function shuffle(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            applySettings();
+            const cards = shuffle(flattenCards());
+            const isMemoryMode = teacherSettings.gameMode === 'memory';
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            cards.forEach((card, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'game-card animate-pop' + (isMemoryMode ? ' memory' : '');
+                button.style.animationDelay = Math.min(index * 0.025, 0.35) + 's';
+                button.dataset.id = card.id;
+                button.dataset.pairId = card.pairId;
+                button.setAttribute('aria-label', isMemoryMode ? 'Hidden card' : (card.alt || card.content || 'Matching card'));
+                button.innerHTML = isMemoryMode ? renderMemoryCard(card) : '<div class="card-inner">' + renderCardContent(card) + '</div>';
+                button.addEventListener('click', () => handleCardClick(button));
+                grid.appendChild(button);
+            });
+            updateStats();
+            requestAnimationFrame(fitGameToScreen);
+            setTimeout(fitGameToScreen, 150);
+        }
+
+        function renderCardContent(card) {
+            if (card.type === 'image') {
+                return '<img class="card-image" src="' + escapeAttribute(card.content) + '" alt="' + escapeAttribute(card.alt || '') + '">';
+            }
+            return '<div class="card-text">' + escapeHtml(card.content) + '</div>';
+        }
+
+        function renderMemoryCard(card) {
+            return '<div class="card-inner">' +
+                '<div class="card-face card-back"><div class="memory-symbol">?</div><div class="memory-label">Tap to reveal</div></div>' +
+                '<div class="card-face card-front">' + renderCardContent(card) + '</div>' +
+                '</div>';
+        }
+
+        function clampNumber(min, value, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function fitGameToScreen() {
+            const grid = document.getElementById('game-grid');
+            const wrap = document.getElementById('game-grid-wrap');
+            if (!grid || !wrap || !grid.children.length) return;
+
+            const count = grid.children.length;
+            const rect = wrap.getBoundingClientRect();
+            const availableWidth = Math.max(240, rect.width);
+            const availableHeight = Math.max(160, rect.height);
+            const maxColumns = Math.min(count, 10);
+            const minColumns = count <= 4 ? 2 : 3;
+            let best = null;
+
+            for (let cols = minColumns; cols <= maxColumns; cols++) {
+                const rows = Math.ceil(count / cols);
+                const gap = clampNumber(4, Math.floor(Math.min(availableWidth, availableHeight) / 70), 14);
+                const cellWidth = (availableWidth - gap * (cols - 1)) / cols;
+                const cellHeight = (availableHeight - gap * (rows - 1)) / rows;
+                if (cellWidth <= 24 || cellHeight <= 24) continue;
+
+                const aspect = cellWidth / cellHeight;
+                const aspectPenalty = Math.abs(Math.log(aspect / 1.05));
+                const sizeScore = Math.min(cellWidth, cellHeight) * 3 + Math.sqrt(cellWidth * cellHeight);
+                const score = sizeScore - aspectPenalty * 24;
+
+                if (!best || score > best.score) {
+                    best = { cols, rows, gap, cellWidth, cellHeight, score };
+                }
+            }
+
+            if (!best) return;
+
+            const cardHeight = Math.floor(best.cellHeight);
+            const pad = clampNumber(4, Math.round(cardHeight * 0.08), 14);
+            const border = clampNumber(2, Math.round(cardHeight * 0.018), 4);
+            const textSize = clampNumber(8, Math.min(best.cellWidth / 8.5, cardHeight / 5.2), 22);
+            const imageHeight = Math.max(22, Math.floor(cardHeight - pad * 2 - border * 2));
+            const radius = clampNumber(8, Math.round(cardHeight * 0.08), 22);
+            const lineCount = cardHeight < 58 ? 3 : cardHeight < 86 ? 4 : 6;
+
+            grid.style.gridTemplateColumns = 'repeat(' + best.cols + ', minmax(0, 1fr))';
+            grid.style.gridAutoRows = cardHeight + 'px';
+            grid.style.gap = best.gap + 'px';
+
+            document.documentElement.style.setProperty('--match-card-pad', pad + 'px');
+            document.documentElement.style.setProperty('--match-card-border', border + 'px');
+            document.documentElement.style.setProperty('--match-card-radius', radius + 'px');
+            document.documentElement.style.setProperty('--match-img-radius', Math.max(6, radius - 5) + 'px');
+            document.documentElement.style.setProperty('--match-card-text-size', textSize.toFixed(1) + 'px');
+            document.documentElement.style.setProperty('--match-card-img-h', imageHeight + 'px');
+            document.documentElement.style.setProperty('--match-card-lines', lineCount);
+            document.documentElement.style.setProperty('--memory-symbol-size', clampNumber(18, Math.round(cardHeight * 0.25), 52) + 'px');
+            document.documentElement.style.setProperty('--memory-label-size', clampNumber(8, Math.round(cardHeight * 0.08), 15) + 'px');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        function escapeAttribute(value) { return escapeHtml(value); }
+
+        function handleCardClick(cardElement) {
+            if (inputLocked || cardElement.classList.contains('matched')) return;
+            const isMemoryMode = teacherSettings.gameMode === 'memory';
+            if (isMemoryMode && cardElement.classList.contains('flipped')) return;
+            startTimer();
+            playSound('tap');
+
+            if (!isMemoryMode && selectedCards.includes(cardElement)) {
+                cardElement.classList.remove('selected');
+                selectedCards = selectedCards.filter(card => card !== cardElement);
+                return;
+            }
+
+            if (selectedCards.length >= 2) return;
+            cardElement.classList.add('selected');
+            if (isMemoryMode) cardElement.classList.add('flipped');
+            selectedCards.push(cardElement);
+
+            if (selectedCards.length === 2) {
+                checkSelectedPair();
+            }
+        }
+
+        function checkSelectedPair() {
+            inputLocked = true;
+            const [first, second] = selectedCards;
+            const isMatch = first.dataset.pairId === second.dataset.pairId;
+
+            if (isMatch) {
+                setTimeout(() => {
+                    first.classList.remove('selected');
+                    second.classList.remove('selected');
+                    first.classList.add('matched');
+                    second.classList.add('matched');
+                    selectedCards = [];
+                    inputLocked = false;
+                    score++;
+                    playSound('correct');
+                    updateStats();
+                    if (score === pairData.length) finishGame();
+                }, 250);
+            } else {
+                wrongMatches++;
+                first.classList.add('wrong', 'animate-shake');
+                second.classList.add('wrong', 'animate-shake');
+                playSound('wrong');
+                updateStats();
+                setTimeout(() => {
+                    first.classList.remove('selected', 'wrong', 'animate-shake');
+                    second.classList.remove('selected', 'wrong', 'animate-shake');
+                    if (teacherSettings.gameMode === 'memory') {
+                        first.classList.remove('flipped');
+                        second.classList.remove('flipped');
+                    }
+                    selectedCards = [];
+                    inputLocked = false;
+                }, teacherSettings.gameMode === 'memory' ? 950 : 720);
+            }
+        }
+
+        function startTimer() {
+            if (timerStarted) return;
+            timerStarted = true;
+            startTime = performance.now();
+            timerInterval = setInterval(() => {
+                elapsedMs = performance.now() - startTime;
+                document.getElementById('timer-display').textContent = formatTime(elapsedMs);
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            elapsedMs = timerStarted ? performance.now() - startTime : 0;
+            document.getElementById('timer-display').textContent = formatTime(elapsedMs);
+        }
+
+        function getPenaltyMs() {
+            return wrongMatches * Number(teacherSettings.wrongMatchPenaltySeconds || 0) * 1000;
+        }
+
+        function getFinalScoreMs() {
+            return elapsedMs + getPenaltyMs();
+        }
+
+        function bestKey() {
+            return 'matchPairsBest:' + (teacherSettings.gameMode || 'pairs') + ':' + teacherSettings.categoryName + ':' + pairData.length;
+        }
+
+        function updateBestDisplay() {
+            const best = sessionStorage.getItem(bestKey());
+            document.getElementById('best-display').textContent = best ? formatTime(Number(best)) : '—';
+        }
+
+        function finishGame() {
+            stopTimer();
+            const finalScore = getFinalScoreMs();
+            const previousBest = sessionStorage.getItem(bestKey());
+            if (!previousBest || finalScore < Number(previousBest)) {
+                sessionStorage.setItem(bestKey(), String(finalScore));
+            }
+            updateStats();
+            updateBestDisplay();
+            document.getElementById('final-raw-time').textContent = formatTime(elapsedMs);
+            document.getElementById('final-wrong').textContent = wrongMatches;
+            document.getElementById('final-penalty').textContent = '+' + formatTime(getPenaltyMs());
+            document.getElementById('final-score-time').textContent = formatTime(finalScore);
+            document.getElementById('final-best').textContent = formatTime(Number(sessionStorage.getItem(bestKey())));
+            document.getElementById('win-modal').classList.remove('hidden');
+            document.getElementById('win-modal').classList.add('flex');
+            playSound('win');
+        }
+
+        function updateStats() {
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('wrong-display').textContent = wrongMatches;
+            document.getElementById('penalty-display').textContent = '+' + formatTime(getPenaltyMs());
+        }
+
+        function formatTime(ms) {
+            const totalTenths = Math.max(0, Math.floor(ms / 100));
+            const minutes = Math.floor(totalTenths / 600);
+            const seconds = Math.floor((totalTenths % 600) / 10);
+            const tenths = totalTenths % 10;
+            return minutes + ':' + String(seconds).padStart(2, '0') + '.' + tenths;
+        }
+
+        function updateSoundButton() {
+            const button = document.getElementById('sound-toggle');
+            button.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioContext.currentTime;
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+                const soundMap = {
+                    tap: [440, 0.045, 'sine'],
+                    correct: [660, 0.11, 'triangle'],
+                    wrong: [170, 0.14, 'sawtooth'],
+                    win: [880, 0.28, 'triangle']
+                };
+                const [frequency, duration, wave] = soundMap[type] || soundMap.tap;
+                oscillator.type = wave;
+                oscillator.frequency.setValueAtTime(frequency, now);
+                if (type === 'win') oscillator.frequency.exponentialRampToValueAtTime(1175, now + duration);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                oscillator.start(now);
+                oscillator.stop(now + duration + 0.02);
+            } catch (error) {
+                soundEnabled = false;
+                updateSoundButton();
+            }
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            updateSoundButton();
+            if (soundEnabled) playSound('correct');
+        });
+
+        window.addEventListener('resize', fitGameToScreen);
+        window.addEventListener('orientationchange', () => setTimeout(fitGameToScreen, 250));
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../service-worker.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
